@@ -1,27 +1,13 @@
 import Btn from "../components/Button";
-import pacienteIcon from "../assets/paciente.png"
-import FuncionarioIcon from "../assets/doutora.png"
-import imgCentral from "../assets/BannerCentral.svg"
-
+import pacienteIcon from "../assets/paciente.png";
+import FuncionarioIcon from "../assets/doutora.png";
+import LeftSide from "../components/LeftSide";
 
 export default function EscolhaAcesso() {
   return (
     <div className="Page-Principal">
-      <aside className="painel-Left">
-        <header id="header-Painel">
-          <h1 className="title" id="title-Left">
-            Nome do Hospital
-          </h1>
-        </header>
-        <div className="img-SVG">
-          <img
-            src={imgCentral}
-            alt=""
-            id="img-login-screen"
-          />
-        </div>
-      </aside>
-
+      <LeftSide />
+      
       <aside className="painel-Right">
         <div className="content">
           <div className="box-text-right">

@@ -1,0 +1,16 @@
+import imgCentral from "../assets/BannerCentral.svg";
+
+export default function LeftSide() {
+  return (
+    <aside className="painel-Left">
+      <header id="header-Painel">
+        <h1 className="title" id="title-left">
+          Nome do Hospital
+        </h1>
+      </header>
+      <div className="img-SVG">
+        <img src={imgCentral} alt="" id="img-login-screen" />
+      </div>
+    </aside>
+  );
+}
