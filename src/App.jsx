@@ -1,5 +1,5 @@
 import EscolhaAcesso from "./pages/EscolhaAcesso";
 
-export default function App(){
-  return <EscolhaAcesso />
+export default function App() {
+  return <EscolhaAcesso />;
 }
