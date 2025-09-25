@@ -16,8 +16,8 @@ export default function EscolhaAcesso() {
               Olá! Por favor, escolha como quer acessar a plataforma
             </h2>
             <p className="text-right">
-              Pacientes e Funcionarios possuem formas de acesso diferentes. Escolha
-              em relação ao exame que você deseja consultar.
+              Pacientes e Funcionarios possuem formas de acesso diferentes.
+              Escolha em relação ao exame que você deseja consultar.
             </p>
           </div>
           <Btn id="btn-paciente" icon={pacienteIcon} text="Paciente" />
