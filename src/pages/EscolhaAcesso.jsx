@@ -7,7 +7,7 @@ export default function EscolhaAcesso() {
   return (
     <div className="Page-Principal">
       <LeftSide />
-      
+
       <aside className="painel-Right">
         <div className="content">
           <div className="box-text-right">
