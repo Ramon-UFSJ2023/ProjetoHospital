@@ -2,6 +2,7 @@ import Btn from "../components/Button";
 import pacienteIcon from "../assets/paciente.png";
 import FuncionarioIcon from "../assets/doutora.png";
 import LeftSide from "../components/LeftSide";
+import "../styles/index.css";
 
 export default function EscolhaAcesso() {
   return (
@@ -15,7 +16,7 @@ export default function EscolhaAcesso() {
               Olá! Por favor, escolha como quer acessar a plataforma
             </h2>
             <p className="text-right">
-              Pacientes e médicos possuem formas de acesso diferentes. Escolha
+              Pacientes e Funcionarios possuem formas de acesso diferentes. Escolha
               em relação ao exame que você deseja consultar.
             </p>
           </div>
