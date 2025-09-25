@@ -133,19 +133,26 @@
   background-color: #C8B6B6;
   width: 585px;
   height: 50px;
-  border-radius: 10px;
+  border-radius: 50px;
   color: black;
   font-size: 15px;
+  border: none;
+  outline: none;
 }
 
 #btn-login{
-  background-color: #9f2a2a;
+  background-color: #eb6d6d;
   width: 585px;
   height: 50px;
-  border-radius: 10px;
+  border-radius: 50px;
   cursor: pointer;
+  border: none;
+  outline: none;
+  box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
 }
-
+#btn-login:hover{
+  background-color: #c93838;
+}
 .btn-login-text{
   color: white;
   font-size: 24px;
