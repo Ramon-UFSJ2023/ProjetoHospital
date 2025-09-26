@@ -1,9 +1,9 @@
-import "../styles/btn.css"
+import "../styles/btn.css";
 
-export default function ButtunReturn({text, onClick}) {
+export default function ButtunReturn({ text, onClick }) {
   return (
     <form class="form-btn-return">
-      <button type="button" clasName="btn-return" onClick={onClick}>
+      <button type="button" className="btn-return" onClick={onClick}>
         <label htmlFor="" className="text-btn-return">
           {text}
         </label>
