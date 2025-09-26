@@ -1,12 +1,13 @@
 import LeftSide from "../components/LeftSide";
-import PageLogin from "../components/pageLogin";
 import "../styles/index.css";
+import Pagelogin from "../components/PageLogin";
 
-export default function pacienteLogin() {
+
+export default function PacienteLogin() {
   return (
     <div className="Page-Principal">
       <LeftSide />
-      <PageLogin title="Login Paciente" />
+      <Pagelogin title="Login Paciente" />
     </div>
   );
 }

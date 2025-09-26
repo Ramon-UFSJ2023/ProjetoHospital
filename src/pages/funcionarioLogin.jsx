@@ -1,8 +1,8 @@
 import LeftSide from "../components/LeftSide";
-import PageLogin from "../components/pageLogin";
 import "../styles/index.css";
+import PageLogin from "../components/PageLogin";
 
-export default function pacienteLogin() {
+export default function FuncionarioLogin() {
   return (
     <div className="Page-Principal">
       <LeftSide />
