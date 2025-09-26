@@ -1,8 +1,8 @@
 import "../styles/login.css";
 import { useState } from "react";
+import ButtonCustom from "./ButtonCustomized";
 
-
-export default function RightSideLogin(title) {
+export default function pageLogin(title) {
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
 
@@ -25,7 +25,6 @@ export default function RightSideLogin(title) {
           <label htmlFor="cpfInput" className="Info-Login">
             CPF
           </label>
-          <p className="text-Login">Insira o seu CPF aqui.Somente números.</p>
           <input
             type="text"
             name=""
@@ -37,7 +36,6 @@ export default function RightSideLogin(title) {
           <label htmlFor="passwordInput" className="Info-Login">
             Senha
           </label>
-          <p className="text-Login">Insira sua Senha aqui.</p>
           <input
             type="password"
             name=""
@@ -46,8 +44,7 @@ export default function RightSideLogin(title) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          //refazer btn<Btn id="btn-login" icon={null} text="Continuar>"></Btn>
-
+          <ButtonCustom size="larger" TypeText="strong" text="Continuar >" />
         </form>
       </div>
       <footer className="bottom">

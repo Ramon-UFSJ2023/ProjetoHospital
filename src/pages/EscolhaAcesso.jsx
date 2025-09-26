@@ -20,8 +20,21 @@ export default function EscolhaAcesso() {
               Escolha em relação ao exame que você deseja consultar.
             </p>
           </div>
-          <BtnCustomized size="larger" variant="icon" TypeText="strong" text="Paciente" img ={pacienteIcon} />
-          <BtnCustomized size="larger" variant="icon" TypeText="strong" text="Funcionário" img= {funcionarioIcon} />
+          <BtnCustomized
+            size="larger"
+            variant="icon"
+            TypeText="strong"
+            text="Paciente"
+            img={pacienteIcon}
+          />
+
+          <BtnCustomized
+            size="larger"
+            variant="icon"
+            TypeText="strong"
+            text="Funcionário"
+            img={funcionarioIcon}
+          />
         </div>
         <footer className="bottom">
           <p>@Copyright2026</p>
