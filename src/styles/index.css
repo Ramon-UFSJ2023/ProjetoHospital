@@ -28,8 +28,9 @@
   max-width: 585px;
   padding-top: 50px;
   height: 750px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 40% 15% 0px;
+  
 }
 #img-login-screen {
   width: 800px;
