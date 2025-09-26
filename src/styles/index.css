@@ -16,6 +16,7 @@
   text-align: center;
   padding: 15px;
 }
+
 .painel-Right {
   display: flex;
   flex-direction: column;
@@ -33,40 +34,6 @@
   top: 60px;
   left: 80px;
   position: absolute;
-}
-.img-btn {
-  width: 60px;
-  height: 60px;
-  margin: 0px;
-}
-.btn {
-  width: 585px;
-  height: 80px;
-  background-color: #9f2a2a;
-  margin: 20px 20px 20px 0px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  padding: 25px;
-  cursor: pointer;
-  transition: backgroud-color 0.4s ease, transform 0.4 ease;
-}
-.btn:hover {
-  background-color: #c93838;
-  transform: scale(1.03);
-}
-#text-btn-funcionario {
-  width: 150px;
-}
-#text-btn-paciente {
-  width: 80px;
-}
-.text-btn {
-  color: white;
-  font-weight: bold;
-  font-size: 24px;
-  width: 150px;
-  padding: 20px;
 }
 .Page-Principal {
   display: grid;
@@ -94,5 +61,3 @@
   font-weight: bold;
   width: 100%;
 }
-
-

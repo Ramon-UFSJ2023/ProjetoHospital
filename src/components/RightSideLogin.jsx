@@ -1,6 +1,6 @@
 import "../styles/login.css";
 import { useState } from "react";
-import Btn from "../components/Button";
+
 
 export default function RightSideLogin(title) {
   const [cpf, setCpf] = useState("");

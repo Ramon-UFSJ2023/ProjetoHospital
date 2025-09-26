@@ -1,8 +1,8 @@
-import Btn from "../components/Button";
 import pacienteIcon from "../assets/paciente.png";
-import FuncionarioIcon from "../assets/doutora.png";
+import funcionarioIcon from "../assets/doutora.png";
 import LeftSide from "../components/LeftSide";
 import "../styles/index.css";
+import BtnCustomized from "../components/ButtonCustomized";
 
 export default function EscolhaAcesso() {
   return (
@@ -20,14 +20,9 @@ export default function EscolhaAcesso() {
               Escolha em relação ao exame que você deseja consultar.
             </p>
           </div>
-          <Btn id="btn-paciente" icon={pacienteIcon} text="Paciente" />
-          <Btn
-            id="btn-funcionario"
-            icon={FuncionarioIcon}
-            text="Funcionários"
-          />
+          <BtnCustomized size="larger" variant="icon" TypeText="strong" text="Paciente" img ={pacienteIcon} />
+          <BtnCustomized size="larger" variant="icon" TypeText="strong" text="Funcionário" img= {funcionarioIcon} />
         </div>
-
         <footer className="bottom">
           <p>@Copyright2026</p>
         </footer>

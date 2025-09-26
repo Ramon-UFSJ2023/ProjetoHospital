@@ -1,0 +1,56 @@
+.btn {
+  background-color: #eb6d6d;
+  border-radius: 50px;
+  height: 50px;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
+  transition: backgroud-color 0.4s ease, transform 0.4 ease;
+}
+
+.btn:hover {
+  background-color: #c93838;
+  transform: scale(1.03);
+}
+.btn-larger {
+  width: 585px;
+  height: 70px;
+}
+.btn-medium {
+  width: 380px;
+}
+.btn-small {
+  width: 200px;
+}
+.btn-icon {
+  margin: 20px 20px 20px 0px;
+  display: flex;
+  align-items: center;
+  padding: 25px;
+}
+
+
+
+.textBtn {
+  text-align: center;
+}
+.textBtn-strong {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.textBtn-weak {
+  color: white;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+
+
+.img-btn {
+  width: 60px;
+  height: 60px;
+  margin: 0px;
+}
