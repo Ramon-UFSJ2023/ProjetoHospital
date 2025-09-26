@@ -27,6 +27,9 @@
 .content {
   max-width: 585px;
   padding-top: 50px;
+  height: 750px;
+  display: flex;
+  flex-direction: column;
 }
 #img-login-screen {
   width: 800px;
@@ -48,6 +51,8 @@
 .box-text-right {
   width: 585px;
   height: 205px;
+  display: flex;
+  flex-direction: column;
 }
 .text-right {
   font-size: 26px;
