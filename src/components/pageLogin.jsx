@@ -33,7 +33,7 @@ export default function PageLogin({ title }) {
             CPF
           </label>
           <input
-            type="text"
+            type="number"
             name=""
             id="cpfInput"
             className="input-right-side"
