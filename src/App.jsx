@@ -9,7 +9,6 @@ export default function App() {
       <Route path="/" element={<EscolheAcesso/ >} />
       <Route path="/login-paciente" element={<PacienteLogin/ >} />
       <Route path="/login-funcionario" element={<FuncionarioLogin/ >} />
-
     </Routes>
   );
 }

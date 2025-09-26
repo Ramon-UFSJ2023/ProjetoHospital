@@ -1,10 +1,16 @@
 import "../styles/login.css";
 import { useState } from "react";
 import ButtonCustom from "./ButtonCustomized";
+import ButtonReturn from "./ButtonReturn";
+import { useNavigate } from "react-router-dom";
 
-export default function PageLogin({title}) {
+
+export default function PageLogin({ title }) {
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
+
+  const navigate = useNavigate();
+  const goEscolhaAcesso = () => {navigate("/")};
 
   const TrySubmit = (event) => {
     event.preventDefault();
@@ -22,6 +28,7 @@ export default function PageLogin({title}) {
           </h2>
         </div>
         <form className="Section-Bottom-Right-Side" onSubmit={TrySubmit}>
+          <ButtonReturn text="<" onClick={goEscolhaAcesso} />
           <label htmlFor="cpfInput" className="Info-Login">
             CPF
           </label>
@@ -44,7 +51,12 @@ export default function PageLogin({title}) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <ButtonCustom size="larger" TypeText="strong" text="Continuar >" showImg="hidden" />
+          <ButtonCustom
+            size="larger"
+            TypeText="strong"
+            text="Continuar >"
+            showImg="hidden"
+          />
         </form>
       </div>
       <footer className="bottom">
