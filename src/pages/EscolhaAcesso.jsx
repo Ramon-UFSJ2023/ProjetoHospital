@@ -3,8 +3,14 @@ import funcionarioIcon from "../assets/doutora.png";
 import LeftSide from "../components/LeftSide";
 import "../styles/index.css";
 import BtnCustomized from "../components/ButtonCustomized";
+import { useNavigate } from "react-router-dom";
 
 export default function EscolhaAcesso() {
+  const navigate =useNavigate();
+  const goPacienteLogin = () => {navigate("/login-paciente")};
+  const goFuncionarioLogin = () => {navigate("/login-funcionario")};
+
+
   return (
     <div className="Page-Principal">
       <LeftSide />
@@ -26,6 +32,7 @@ export default function EscolhaAcesso() {
             TypeText="strong"
             text="Paciente"
             img={pacienteIcon}
+            onClick={goPacienteLogin}
           />
 
           <BtnCustomized
@@ -34,6 +41,7 @@ export default function EscolhaAcesso() {
             TypeText="strong"
             text="Funcionário"
             img={funcionarioIcon}
+            onClick={goFuncionarioLogin}
           />
         </div>
         <footer className="bottom">

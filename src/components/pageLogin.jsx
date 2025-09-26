@@ -2,7 +2,7 @@ import "../styles/login.css";
 import { useState } from "react";
 import ButtonCustom from "./ButtonCustomized";
 
-export default function pageLogin(title) {
+export default function PageLogin({title}) {
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
 
@@ -44,7 +44,7 @@ export default function pageLogin(title) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <ButtonCustom size="larger" TypeText="strong" text="Continuar >" />
+          <ButtonCustom size="larger" TypeText="strong" text="Continuar >" showImg="hidden" />
         </form>
       </div>
       <footer className="bottom">

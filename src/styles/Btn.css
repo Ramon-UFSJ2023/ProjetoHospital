@@ -30,8 +30,6 @@
   padding: 25px;
 }
 
-
-
 .textBtn {
   text-align: center;
 }
@@ -47,10 +45,12 @@
   font-weight: 400;
 }
 
-
-
 .img-btn {
   width: 60px;
   height: 60px;
   margin: 0px;
+}
+
+.img-btn-hidden {
+  display: none;
 }

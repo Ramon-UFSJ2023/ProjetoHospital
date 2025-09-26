@@ -6,7 +6,7 @@ export default function pacienteLogin() {
   return (
     <div className="Page-Principal">
       <LeftSide />
-      <PageLogin title="Login Paciente" />
+      <PageLogin title="Login Funcionario" />
     </div>
   );
 }
