@@ -2,14 +2,17 @@ import pacienteIcon from "../assets/paciente.png";
 import funcionarioIcon from "../assets/doutora.png";
 import LeftSide from "../components/LeftSide";
 import "../styles/index.css";
-import BtnCustomized from "../components/ButtonCustomized";
+import BtnCustomized from "../components/Buttons/ButtonCustomized";
 import { useNavigate } from "react-router-dom";
 
 export default function EscolhaAcesso() {
-  const navigate =useNavigate();
-  const goPacienteLogin = () => {navigate("/login-paciente")};
-  const goFuncionarioLogin = () => {navigate("/login-funcionario")};
-
+  const navigate = useNavigate();
+  const goPacienteLogin = () => {
+    navigate("/login-paciente");
+  };
+  const goFuncionarioLogin = () => {
+    navigate("/login-funcionario");
+  };
 
   return (
     <div className="Page-Principal">

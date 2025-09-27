@@ -1,7 +1,7 @@
-import "../styles/login.css";
+import "./login.css";
 import { useState } from "react";
-import ButtonCustom from "./ButtonCustomized";
-import ButtonReturn from "./ButtonReturn";
+import ButtonCustom from "../Buttons/ButtonCustomized";
+import ButtonReturn from "../Buttons/ButtonReturn";
 import { useNavigate } from "react-router-dom";
 
 

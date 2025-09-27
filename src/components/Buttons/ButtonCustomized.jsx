@@ -1,4 +1,4 @@
-import "../styles/btn.css";
+import "./btn.css";
 
 export default function BtnCustomized({
   size,

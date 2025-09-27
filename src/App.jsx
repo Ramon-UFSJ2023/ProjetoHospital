@@ -1,6 +1,6 @@
-import PacienteLogin from "./pages/pacienteLogin";
+import PacienteLogin from "./pages/PacienteLogin";
 import EscolheAcesso from "./pages/EscolhaAcesso";
-import FuncionarioLogin from "./pages/funcionarioLogin";
+import FuncionarioLogin from "./pages/PacienteLogin";
 import { Routes, Route } from "react-router-dom";
 
 export default function App() {

@@ -1,3 +1,8 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 .btn {
   background-color: #eb6d6d;
   border-radius: 50px;
@@ -74,7 +79,6 @@
 .btn-return:hover {
   background-color: #c93838;
   transform: scale(1.03);
-  
 }
 
 .text-btn-return {
