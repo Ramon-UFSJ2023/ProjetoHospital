@@ -1,6 +1,6 @@
-import LeftSide from "../components/LeftSide";
-import PageLogin from "../components/PageLogin/PageLogin";
-import "../styles/index.css";
+import LeftSide from "../../components/LeftSide";
+import PageLogin from "../../components/PageLogin/PageLogin";
+import "../../styles/index.css";
 
 export default function PacienteLogin() {
   return (
