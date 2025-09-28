@@ -11,6 +11,7 @@ export default function PageLogin({ title }) {
 
   const navigate = useNavigate();
   const goEscolhaAcesso = () => {navigate("/")};
+  const goPageInicialPacient = () => {navigate("/page-inicial-paciente")}
 
   const TrySubmit = (event) => {
     event.preventDefault();
@@ -56,6 +57,7 @@ export default function PageLogin({ title }) {
             TypeText="strong"
             text="Continuar >"
             showImg="hidden"
+            onClick={goPageInicialPacient}
           />
         </form>
       </div>
