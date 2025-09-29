@@ -1,10 +1,12 @@
 import "./stylePaciente/dashBoard.css"
-import "../../components/UpperBar/UpperBar"
-import "../../components/UpperBar/UpperBar"
+import React from "react";
+import UpperBar from "../../components/UpperBar/UpperBar";
+import { functionsPacienteNavBar } from "../../config/itemsSecondNavBar";
+
 
 export default function DashBoardPaciente(){
 
     return(
-        <UpperBar />
+        <UpperBar items = {functionsPacienteNavBar}/>
     );
 }

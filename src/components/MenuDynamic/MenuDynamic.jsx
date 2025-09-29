@@ -21,7 +21,7 @@ export default function MenuDynamic({ items, className = "" }) {
   );
 }
 
-MenuDynamic.prototype = {
+MenuDynamic.PropTypes = {
   items: PropTypes.arrayOf(
     PropTypes.shape({
       label: PropTypes.string.isRequired,

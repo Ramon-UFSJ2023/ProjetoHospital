@@ -1,13 +1,20 @@
 import "./upperBar.css";
+import lupaIcon from "../../assets/pesquisa.png";
+import PropTypes from "prop-types"
 
-export default function upperBar() {
+export default function UpperBar(items) {
+  if(!items || items.lenght===0){
+    return null;
+  }
 
+  const elementsClass = "elements-second-navbar";
+  
   return (
     <nav className="topper-bar">
       <div className="search-container">
         <div className="img-Teste"></div>
         <form action="" className="input-form">
-          <img src="../assets/pesquisa.png" alt="" className="lupa-search" />
+          <img src={lupaIcon} alt="" className="lupa-search" />
           <input
             type="search"
             name=""
@@ -19,14 +26,22 @@ export default function upperBar() {
 
       <div className="functions-bar">
         <ul className="group-elements-second-navbar">
-          <li class="elements-second-navbar" onclick="">
-            Consultas
-          </li>
-          <li className="elements-second-navbar">Reservar</li>
-          <li className="elements-second-navbar">Cirurgias</li>
-          <li className="elements-second-navbar">Pacientes</li>
+          {items.map((item, index) =>(
+            <li key={index} className={elementsClass}>
+              {item.label}
+            </li>
+          ))}
         </ul>
       </div>
     </nav>
   );
 }
+
+UpperBar.prototype = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  className: PropTypes.string,
+};
