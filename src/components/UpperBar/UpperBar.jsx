@@ -1,14 +1,14 @@
 import "./upperBar.css";
 import lupaIcon from "../../assets/pesquisa.png";
-import PropTypes from "prop-types"
+import PropTypes from "prop-types";
 
-export default function UpperBar(items) {
-  if(!items || items.lenght===0){
+export default function UpperBar({ items }) {
+  if (!items || items.length === 0) {
     return null;
   }
 
   const elementsClass = "elements-second-navbar";
-  
+
   return (
     <nav className="topper-bar">
       <div className="search-container">
@@ -26,7 +26,7 @@ export default function UpperBar(items) {
 
       <div className="functions-bar">
         <ul className="group-elements-second-navbar">
-          {items.map((item, index) =>(
+          {items.map((item, index) => (
             <li key={index} className={elementsClass}>
               {item.label}
             </li>
@@ -37,11 +37,10 @@ export default function UpperBar(items) {
   );
 }
 
-UpperBar.prototype = {
+UpperBar.propTypes = {
   items: PropTypes.arrayOf(
     PropTypes.shape({
       label: PropTypes.string.isRequired,
     })
   ).isRequired,
-  className: PropTypes.string,
 };
