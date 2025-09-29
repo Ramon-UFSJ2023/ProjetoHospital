@@ -1,12 +1,19 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 .container-dashboard-paciente{
     display: grid;
     grid-template-rows: auto 1fr;
     height: 100vh;
     width: 100vw;
+    background-color: rgb(245, 245, 245);
 }
 
 .container-dashboard-paciente > :nth-child(2){
     align-self: center;
     justify-self: center;
+    transform: translateY(20px);
 }
