@@ -6,7 +6,7 @@ import { functionsPacienteNavBar } from "../../config/itemsSecondNavBar";
 
 export default function DashBoardPaciente() {
   return (
-    <div>
+    <div className="container-dashboard-paciente">
       <UpperBar items={functionsPacienteNavBar} />
       <DashBoard />
     </div>
