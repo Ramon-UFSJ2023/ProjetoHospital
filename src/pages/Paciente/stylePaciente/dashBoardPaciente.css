@@ -2,12 +2,11 @@
 .container-dashboard-paciente{
     display: grid;
     grid-template-rows: auto 1fr;
-
     height: 100vh;
     width: 100vw;
 }
 
 .container-dashboard-paciente > :nth-child(2){
-    display: grid;
-    place-items: center;
+    align-self: center;
+    justify-self: center;
 }
