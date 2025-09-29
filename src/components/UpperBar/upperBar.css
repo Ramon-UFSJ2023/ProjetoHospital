@@ -65,6 +65,7 @@
   grid-column: 1 / -1;
   border-radius: 15px 15px 0px 0px;
   transform: translateY(-8px);
+  margin-bottom: 20px;
 }
 
 .group-elements-second-navbar {
