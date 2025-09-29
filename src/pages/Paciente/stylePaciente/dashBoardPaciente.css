@@ -1,9 +1,13 @@
 
-
 .container-dashboard-paciente{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: grid;
+    grid-template-rows: auto 1fr;
+
     height: 100vh;
     width: 100vw;
+}
+
+.container-dashboard-paciente > :nth-child(2){
+    display: grid;
+    place-items: center;
 }
