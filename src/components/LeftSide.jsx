@@ -1,4 +1,5 @@
 import imgCentral from "../assets/BannerCentral.svg";
+import "../styles/index.css";
 
 export default function LeftSide() {
   return (
