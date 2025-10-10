@@ -2,8 +2,8 @@ import EscolheAcesso from "./pages/EscolhaAcesso";
 import PacienteLogin from "./pages/Paciente/PacienteLogin";
 import DashBoardPaciente from "./pages/Paciente/DashboardPaciente";
 import FuncionarioLogin from "./pages/Funcionario/FuncionarioLogin";
-
 import { Routes, Route } from "react-router-dom";
+import "./styles/global.css"
 
 export default function App() {
   return (
