@@ -5,7 +5,7 @@
 }
 
 .topper-bar {
-  background-color: #ee6161;
+  background-color: #600505;
   width: 100%;
   height: 95px;
   display: grid;
@@ -23,7 +23,7 @@
 }
 
 .bar-search {
-  background-color: #c8b6b6;
+  background-color: #feeded;
   border-radius: 50px;
   padding-left: 50px;
   padding-right: 30px;
@@ -60,7 +60,7 @@
 
 .functions-bar {
   width: 100%;
-  background-color: #eb6d6d;
+  background-color: #780606;
   height: 60px;
   grid-column: 1 / -1;
   border-radius: 15px 15px 0px 0px;
@@ -95,9 +95,8 @@
   background-color: rgb(248, 162, 162, 0.3);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
-  transform: scale(1.05);
   border: 4px outset;
+  border-radius: 10px;
   border-color: rgba(255, 255, 255, 0.534);
   cursor: pointer;
-  height: 92%;
 }
