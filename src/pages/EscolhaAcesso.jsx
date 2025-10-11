@@ -24,7 +24,7 @@ export default function EscolhaAcesso() {
             <h2 className="title-left">
               Olá! Por favor, escolha como quer acessar a plataforma
             </h2>
-            <p className="text-right">
+            <p className="text-left text-left-rightside">
               Pacientes e Funcionarios possuem formas de acesso diferentes.
               Escolha em relação ao exame que você deseja consultar.
             </p>

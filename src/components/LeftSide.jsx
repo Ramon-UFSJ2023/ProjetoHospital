@@ -5,7 +5,7 @@ export default function LeftSide() {
   return (
     <aside className="painel-Left">
       <header id="header-Painel">
-        <h1 className="title" id="title-Left">
+        <h1 className="title text-3xl" id="title-Left">
           MARX ENGELS <br></br>HOSPITAL
         </h1>
       </header>

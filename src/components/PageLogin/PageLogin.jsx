@@ -4,14 +4,17 @@ import ButtonCustom from "../Buttons/ButtonCustomized";
 import ButtonReturn from "../Buttons/ButtonReturn";
 import { useNavigate } from "react-router-dom";
 
-
 export default function PageLogin({ title }) {
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
 
   const navigate = useNavigate();
-  const goEscolhaAcesso = () => {navigate("/")};
-  const goPageInicialPacient = () => {navigate("/page-inicial-paciente")}
+  const goEscolhaAcesso = () => {
+    navigate("/");
+  };
+  const goPageInicialPacient = () => {
+    navigate("/page-inicial-paciente");
+  };
 
   const TrySubmit = (event) => {
     event.preventDefault();
