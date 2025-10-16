@@ -18,10 +18,15 @@ body {
 }
 
 .page-cadastro {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto 1fr;
   border: 2px solid black;
   width: 620px;
   height: 820px;
   align-items: center;
+  padding: 15px;
+}
+
+.inputs-groups{
+    padding: 15px;
 }
