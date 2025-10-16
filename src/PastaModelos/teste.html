@@ -8,28 +8,39 @@
   </head>
   <body>
     <div class="container">
-            <h1 class="Title">Paciente</h1>
-            <form class="page-Cadastro" action="/cadastro" method="post">
-                <label for="nome">Nome</label>
-                <input type="text" name="Nome" id="input-name" class="inputs"/>
+      <h1 class="Title">Paciente</h1>
 
-                <label for="CPF" class="text-amber-300">CPF</label>
-                <input type="number" name="Nome" id="input-cpf" class="inputs"/>
-
-                <label for="date-born">Data de Nascimento</label>
-                <input type="datetime-local" name="" id="input-date" class="inputs">
-
-                <labe for="text">Telefone</label>
-                <input type="tel" name="Nome" id="input-name" class="inputs"/>
-
-                <label>Endereço</label>
-                <input type="text" name="Nome" id="input-name" class="inputs"/>
-                
-                <label>Genero</label>
-                <label for="masculino">Masculino</label>
-                <input type="checkbox" name="Masculino" id="">
-
-            </form>
+      <form class="page-cadastro" action="/cadastro" method="post">
+        <div class="inputs-groups">
+          <label for="nome">Nome</label>
+          <input type="text" name="Nome" id="input-name" class="inputs" />
         </div>
+
+        <div class="inputs-groups">
+          <label for="CPF" class="text-amber-300">CPF</label>
+          <input type="number" name="Nome" id="input-cpf" class="inputs" />
+        </div>
+
+        <div class="inputs-groups">
+          <label for="date-born">Data de Nascimento</label>
+          <input type="datetime-local" name="" id="input-date" class="inputs" />
+        </div>
+
+        <div class="inputs-groups">
+          <label for="text">Telefone</label>
+          <input type="tel" name="Nome" id="input-name" class="inputs" />
+        </div>
+
+        <div class="inputs-groups">
+          <label for="Email">Email</label>
+          <input type="email" name="" id="" />
+        </div>
+
+        <div class="inputs-groups">
+          <label for="password">Password</label>
+          <input type="password" name="Senha-cliente" id="" />
+        </div>
+      </form>
+    </div>
   </body>
 </html>

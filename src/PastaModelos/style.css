@@ -1,18 +1,27 @@
-*{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.container{
-    display: flex;
-    gap: 10px;
-    flex-direction: column;
-    align-items: center;
-    height: 850px;
+.container {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  align-items: center;
+  height: 850px;
 }
 
-body{
-    height: 100vh;
-    width: 100vw;
+body {
+  height: 100vh;
+  width: 100vw;
+}
+
+.page-cadastro {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid black;
+  width: 620px;
+  height: 820px;
+  align-items: center;
 }
