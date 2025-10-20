@@ -79,3 +79,12 @@ input::-webkit-inner-spin-button {
   font-weight: bold;
   width: 100%;
 }
+.link-cad{
+  font-size: 20px;
+  margin-top: 10px;
+}
+
+#direction-login{
+  cursor: pointer;
+  color:#9f2a2a
+}
