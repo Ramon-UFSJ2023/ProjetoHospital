@@ -4,7 +4,7 @@ import ButtonCustom from "../Buttons/ButtonCustomized";
 import ButtonReturn from "../Buttons/ButtonReturn";
 import { useNavigate } from "react-router-dom";
 
-export default function PageLogin({ title }) {
+export default function PageLogin({ title, showLinkCadastro }) {
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
 
@@ -15,10 +15,9 @@ export default function PageLogin({ title }) {
   const goPageInicialPacient = () => {
     navigate("/page-inicial-paciente");
   };
-  const goPageCadastroPaciente = () =>{
-    navigate("/page-cad-paciente")
-  }
-
+  const goPageCadastroPaciente = () => {
+    navigate("/page-cad-paciente");
+  };
 
   const TrySubmit = (event) => {
     event.preventDefault();
@@ -66,9 +65,20 @@ export default function PageLogin({ title }) {
             showImg="hidden"
             onClick={goPageInicialPacient}
           />
-          <h1 className="link-cad">Não esta cadastrado? <a className="link-cad" id="direction-login" onClick={goPageCadastroPaciente}>Cadastre-se</a></h1>
+
+          {showLinkCadastro && (
+            <h1 className="link-cad">
+              Não esta cadastrado?{" "}
+              <a
+                className="link-cad"
+                id="direction-login"
+                onClick={goPageCadastroPaciente}
+              >
+                Cadastre-se
+              </a>
+            </h1>
+          )}
         </form>
-        
       </div>
       <footer className="bottom">
         <p>@Copyright2026</p>
