@@ -1,7 +1,17 @@
 import "./cadastro.css";
-import BtnCustomized from "../Buttons/ButtonCustomized"
+import BtnCustomized from "../Buttons/ButtonCustomized";
+import { useNavigate } from "react-router-dom";
+
 
 export default function PageCadastro() {
+  const navigate = useNavigate();
+
+  const goPageInicialPacient = () => {
+    navigate("/page-inicial-paciente");
+  };
+
+
+
   return (
     <div className="container">
       <h1 class="Title">Paciente</h1>
@@ -35,6 +45,13 @@ export default function PageCadastro() {
           <label for="password">Password</label>
           <input type="password" name="Senha-cliente" id="" class="inputs" />
         </div>
+        <BtnCustomized
+          size="medium"
+          TypeText="strong"
+          text="Cadastre-se"
+          showImg="hidden"
+          onClick={goPageInicialPacient}
+        />
       </form>
     </div>
   );
