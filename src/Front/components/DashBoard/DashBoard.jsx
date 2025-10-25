@@ -1,10 +1,5 @@
-import "./dashboard.css"
-
+import "./dashboard.css";
 
 export default function DashBoard() {
-  return (
-
-  <div className="background-dashboard">
-  </div>
-  );
+  return <div className="background-dashboard"></div>;
 }
