@@ -1,6 +1,7 @@
 import EscolheAcesso from "./pages/EscolhaAcesso";
 import PacienteLogin from "./pages/Paciente/PacienteLogin";
 import DashBoardPaciente from "./pages/Paciente/DashboardPaciente";
+import DashBoardFunAdmin from "./pages/FuncionarioAdmin/DashBoardFunAdm";
 import FuncionarioLogin from "./pages/Funcionario/FuncionarioLogin";
 import PageCadastro from "./pages/Paciente/PageCadastro";
 import { Routes, Route } from "react-router-dom";
@@ -14,6 +15,7 @@ export default function App() {
       <Route path="/page-inicial-paciente" element={<DashBoardPaciente />} />
       <Route path="/login-funcionario" element={<FuncionarioLogin />} />
       <Route path="/page-cad-paciente" element={<PageCadastro />}/>
+      <Route path="/page-func-adm" element={<DashBoardFunAdmin />}/>
     </Routes>
   );
 }
