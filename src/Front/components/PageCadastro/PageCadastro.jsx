@@ -2,6 +2,7 @@ import "./cadastro.css";
 import BtnCustomized from "../Buttons/ButtonCustomized";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import Select from "react-select";
 
 export default function PageCadastro() {
   const navigate = useNavigate();
@@ -10,14 +11,22 @@ export default function PageCadastro() {
     navigate("/page-inicial-paciente");
   };
 
-  const [estados, setEstados] = useState([]);
-  const [estadoSelecionado, setEstadoSelecionado] = useState('');
+  const [optionsEstados, setOptionsEstados] = useState([]);
+  const [estadoSelecionado, setEstadoSelecionado] = useState(null);
 
   useEffect(() =>{
     const url = "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome"
 
-    fetch(url).then(response => response.json()).then(data =>{
-      setEstados(data);
+    fetch(url)
+    .then(response => response.json())
+    .then(data =>{
+      if(Array.isArray(data)){
+        const options = data.map((estado) =>({
+          value: estado.sigla,
+          label: `${estado.nome} (${estado.sigla})`,
+        }));
+        setOptionsEstados(options);
+      }
     })
     .catch(error =>{
       console.log("Erro ao buscar estados", error);
@@ -68,18 +77,23 @@ export default function PageCadastro() {
           </div>
 
           <div className="inputs-groups">
-            <label for="CPF">Bairro</label>
-            <input type="number" name="Nome" id="input-cpf" className="inputs" />
+            <label for="Bairro">Bairro</label>
+            <input type="text" name="Nome" id="input-bairro" className="inputs" />
           </div>
 
           <div className="inputs-groups">
             <label for="estado">Estados</label>
-            <select name="estado" id="estado" className="inputs" value={estadoSelecionado} onChange={e=> setEstadoSelecionado(e.target.value) }>
-              <option value="">Selecione um estado</option>
-              {estados.map(estado =>(
-                <option key={estado.id} value={estado.sigla} className="option-estado">{estado.sigla}</option>
-              ))}
-            </select>
+            <Select 
+              id="estado"
+              name="estado"
+              options={optionsEstados}
+              value={estadoSelecionado}
+              onChange={setEstadoSelecionado}
+              placeholder="Selecione um Estado"
+              isLoading={optionsEstados.length===0}
+              maxMenuHeight={220}
+              classNamePrefix="custom-select"
+            />
           </div>
 
           <div className="inputs-groups">

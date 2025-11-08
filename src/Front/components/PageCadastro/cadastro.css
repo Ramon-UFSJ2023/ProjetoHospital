@@ -15,7 +15,7 @@
   align-items: center;
   width: 1200px;
   border-radius: 20px;
-
+  background-color: white;
   box-shadow: 0px 0px 10px 2px #a0404081;
   margin: 10px;
 }
@@ -56,6 +56,31 @@
   text-align: center;
   margin-bottom: 10px;
 }
-.option-estado{
+.option-estado {
   max-height: 200px;
+}
+
+.custom-select__control {
+  height: 50px;
+  border-radius: 50px !important; /* !important para forçar o override */
+  padding-left: 10px; /* Um pouco menos que o input, pois o select tem seu padding interno */
+  font-size: 15px;
+  background-color: #fca2a2 !important;
+  color: aliceblue !important; 
+  outline: none !important;
+  border: none !important;
+  box-shadow: none; /* Remove a sombra padrão dele */
+}
+
+.custom-select__single-value {
+  color: aliceblue !important;
+  outline: none !important;
+
+}
+
+.custom-select__placeholder {
+  color: aliceblue !important;
+  opacity: 0.8; /* Um pouco mais claro que o texto normal */
+  outline: none !important;
+
 }
