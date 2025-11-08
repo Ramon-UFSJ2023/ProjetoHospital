@@ -1,46 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Menu Dinâmico</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="Title">Paciente</h1>
-
-      <form class="page-cadastro" action="/cadastro" method="post">
-        <div class="inputs-groups">
-          <label for="nome">Nome</label>
-          <input type="text" name="Nome" id="input-name" class="inputs" />
-        </div>
-
-        <div class="inputs-groups">
-          <label for="CPF">CPF</label>
-          <input type="number" name="Nome" id="input-cpf" class="inputs" />
-        </div>
-
-        <div class="inputs-groups">
-          <label for="date-born">Data de Nascimento</label>
-          <input type="date" name="" id="input-date" class="inputs" />
-        </div>
-
-        <div class="inputs-groups">
-          <label for="text">Telefone</label>
-          <input type="tel" name="Nome" id="input-name" class="inputs" />
-        </div>
-
-        <div class="inputs-groups">
-          <label for="Email">Email</label>
-          <input type="text" name="" id="" class="inputs"/>
-        </div>
-
-        <div class="inputs-groups">
-          <label for="password">Password</label>
-          <input type="password" name="Senha-cliente" id="" class="inputs"/>
-        </div>
-      </form>
-    </div>
-  </body>
-</html>
+          <div className="inputs-groups">
+            <label for="estado">Estados</label>
+            <select name="estado" id="estado" className="inputs" value={estadoSelecionado} onChange={e=> setEstadoSelecionado(e.target.value) }>
+              <option value="">Selecione um estado</option>
+              {estados.map(estado =>(
+                <option key={estado.id} value={estado.sigla} className="option-estado">{estado.sigla}</option>
+              ))}
+            </select>
+          </div>

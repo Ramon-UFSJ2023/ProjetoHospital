@@ -1,7 +1,7 @@
 import "./cadastro.css";
 import BtnCustomized from "../Buttons/ButtonCustomized";
 import { useNavigate } from "react-router-dom";
-
+import { useEffect, useState } from "react";
 
 export default function PageCadastro() {
   const navigate = useNavigate();
@@ -10,49 +10,102 @@ export default function PageCadastro() {
     navigate("/page-inicial-paciente");
   };
 
+  const [estados, setEstados] = useState([]);
+  const [estadoSelecionado, setEstadoSelecionado] = useState('');
 
+  useEffect(() =>{
+    const url = "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome"
+
+    fetch(url).then(response => response.json()).then(data =>{
+      setEstados(data);
+    })
+    .catch(error =>{
+      console.log("Erro ao buscar estados", error);
+    })
+  }, []);
 
   return (
     <div className="container">
-      <h1 class="Title">Paciente</h1>
-      <form class="page-cadastro" action="/cadastro" method="post">
-        <div class="inputs-groups">
-          <label for="nome">Nome</label>
-          <input type="text" name="Nome" id="input-name" class="inputs" />
-        </div>
+      <h1 className="Title">Cadastro Paciente</h1>
 
-        <div class="inputs-groups">
-          <label for="CPF">CPF</label>
-          <input type="number" name="Nome" id="input-cpf" class="inputs" />
-        </div>
+      <form className="page-cadastro" action="/cadastro" method="post">
+        <main className="Input-cad" id="left-side-cad">
+          <div className="inputs-groups">
+            <label for="nome">Nome</label>
+            <input type="text" name="Nome" id="input-name" className="inputs" />
+          </div>
 
-        <div class="inputs-groups">
-          <label for="date-born">Data de Nascimento</label>
-          <input type="date" name="" id="input-date" class="inputs" />
-        </div>
+          <div className="inputs-groups">
+            <label for="CPF">CPF</label>
+            <input type="number" name="Nome" id="input-cpf" className="inputs" />
+          </div>
 
-        <div class="inputs-groups">
-          <label for="text">Telefone</label>
-          <input type="tel" name="Nome" id="input-name" class="inputs" />
-        </div>
+          <div className="inputs-groups">
+            <label for="date-born">Data de Nascimento</label>
+            <input type="date" name="" id="input-date" className="inputs" />
+          </div>
 
-        <div class="inputs-groups">
-          <label for="Email">Email</label>
-          <input type="text" name="" id="" class="inputs" />
-        </div>
+          <div className="inputs-groups">
+            <label for="text">Telefone</label>
+            <input type="tel" name="Nome" id="input-name" className="inputs" />
+          </div>
 
-        <div class="inputs-groups">
-          <label for="password">Password</label>
-          <input type="password" name="Senha-cliente" id="" class="inputs" />
-        </div>
-        <BtnCustomized
-          size="medium"
-          TypeText="strong"
-          text="Cadastre-se"
-          showImg="hidden"
-          onClick={goPageInicialPacient}
-        />
+          <div className="inputs-groups">
+            <label for="Email">Email</label>
+            <input type="text" name="" id="" className="inputs" />
+          </div>
+
+          <div className="inputs-groups">
+            <label for="password">Password</label>
+            <input type="password" name="Senha-cliente" id="" className="inputs" />
+          </div>
+        </main>
+
+        <main className="Input-cad" id="right-side-cad">
+          <div className="inputs-groups">
+            <label for="nome">Cidade</label>
+            <input type="text" name="Nome" id="input-name" className="inputs" />
+          </div>
+
+          <div className="inputs-groups">
+            <label for="CPF">Bairro</label>
+            <input type="number" name="Nome" id="input-cpf" className="inputs" />
+          </div>
+
+          <div className="inputs-groups">
+            <label for="estado">Estados</label>
+            <select name="estado" id="estado" className="inputs" value={estadoSelecionado} onChange={e=> setEstadoSelecionado(e.target.value) }>
+              <option value="">Selecione um estado</option>
+              {estados.map(estado =>(
+                <option key={estado.id} value={estado.sigla} className="option-estado">{estado.sigla}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="inputs-groups">
+            <label for="text">Telefone</label>
+            <input type="tel" name="Nome" id="input-name" className="inputs" />
+          </div>
+
+          <div className="inputs-groups">
+            <label for="Email">Email</label>
+            <input type="text" name="" id="" className="inputs" />
+          </div>
+
+          <div className="inputs-groups">
+            <label for="password">Password</label>
+            <input type="password" name="Senha-cliente" id="" className="inputs" />
+          </div>
+        </main>
       </form>
+      
+      <BtnCustomized
+        size="medium"
+        TypeText="strong"
+        text="Cadastre-se"
+        showImg="hidden"
+        onClick={goPageInicialPacient}
+      />
     </div>
   );
 }
