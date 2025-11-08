@@ -18,7 +18,7 @@
   box-shadow: 0px 0px 10px 2px #a0404081;
   margin: 15px;
   grid-template-columns: 1fr 1fr 1fr;
-
+  
 }
 
 .inputs-groups {
@@ -43,6 +43,7 @@
   color: aliceblue;
   font-weight: bold;
   outline: none;
+  width: 100%;
 }
 
 #input-date {
@@ -98,52 +99,4 @@
 #side-address{
   box-shadow: 10px 0px 15px -5px #a0404081;
 
-}
-
-
-/* Garantir que input type=date tenha mesmo visual */
-.inputs[type="date"] {
-  -webkit-appearance: none; /* Chrome/Safari */
-  -moz-appearance: textfield; /* Firefox */
-  appearance: none;
-  background-color: #fca2a2; /* mesmo que .inputs */
-  color: aliceblue;
-  font-weight: bold;
-  padding-left: 25px;
-  padding-right: 25px; /* evita sobreposição do ícone */
-  height: 50px;
-  border-radius: 50px;
-  outline: none;
-  border: none;
-  box-sizing: border-box;
-}
-
-/* Indicador do calendário - torna discreto e clicável */
-.inputs[type="date"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.9;
-  margin-right: 6px;
-  -webkit-appearance: none;
-}
-
-/* Remover botões/rolagem nativa em WebKit */
-.inputs[type="date"]::-webkit-inner-spin-button,
-.inputs[type="date"]::-webkit-clear-button {
-  -webkit-appearance: none;
-  display: none;
-}
-
-/* Mesmo comportamento visual ao focar (clicar) */
-.inputs:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(159, 42, 42, 0.12); /* sutil realce, combina com a paleta */
-  background-color: #fca2a2;
-  color: aliceblue;
-}
-
-/* Para Firefox, evitar o ícone nativo em alguns casos */
-@supports (-moz-appearance: none) {
-  .inputs[type="date"] {
-    padding-right: 30px;
-  }
 }

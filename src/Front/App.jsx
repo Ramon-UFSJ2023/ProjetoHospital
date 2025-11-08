@@ -2,7 +2,7 @@ import EscolheAcesso from "./pages/EscolhaAcesso";
 import PacienteLogin from "./pages/Paciente/PacienteLogin";
 import DashBoardPaciente from "./pages/Paciente/DashboardPaciente";
 import FuncionarioLogin from "./pages/Funcionario/FuncionarioLogin";
-import PageCadastro from "./components/PageCadastro/PageCadastro";
+import PageCadastro from "./pages/Paciente/PageCadastro";
 import { Routes, Route } from "react-router-dom";
 import "./styles/global.css";
 

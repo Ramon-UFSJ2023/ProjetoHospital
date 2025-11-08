@@ -1,8 +1,9 @@
-import "./cadastro.css";
-import BtnCustomized from "../Buttons/ButtonCustomized";
+import "./stylePaciente/cadastro.css";
+import BtnCustomized from "../../components/Buttons/ButtonCustomized";
 import { useNavigate } from "react-router-dom";
 import { use, useEffect, useState } from "react";
-import Select from "react-select";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function PageCadastro() {
   const navigate = useNavigate();
@@ -83,13 +84,18 @@ export default function PageCadastro() {
 
           <div className="inputs-groups">
             <label for="date-born">Data de Nascimento</label>
-            <input
-              type="date"
-              name=""
-              id="input-date"
+            <DatePicker 
+              selected={date}
+              onChange={(newDate) => setDate(newDate)}
               className="inputs"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              placeholderText="DD/MM/YYYY"
+              dateFormat="dd/mm/YYYY"
+              showMonthDropdown
+              scrollableMonthYearDropdown
+              showYearDropdown
+              scrollableYearDropdown
+              yearDropdownItemNumber={100}
+              maxDate={new Date()}
             />
           </div>
 
