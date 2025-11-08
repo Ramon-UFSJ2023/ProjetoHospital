@@ -13,7 +13,12 @@ export default function PageCadastro() {
 
   const [optionsEstados, setOptionsEstados] = useState([]);
   const [estadoSelecionado, setEstadoSelecionado] = useState(null);
+  const [optionsCidades, setOptionsCidades] = useState([]);
+  const [cidadeSelecionada, setCidadeSelecionada] = useState(null);
 
+
+
+  //Função pra listar Estados
   useEffect(() =>{
     const url = "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome"
 
@@ -32,6 +37,9 @@ export default function PageCadastro() {
       console.log("Erro ao buscar estados", error);
     })
   }, []);
+
+  useEffect(() =>{}, []);
+
 
   return (
     <div className="container">
@@ -72,17 +80,7 @@ export default function PageCadastro() {
 
         <main className="Input-cad" id="right-side-cad">
           <div className="inputs-groups">
-            <label for="nome">Cidade</label>
-            <input type="text" name="Nome" id="input-name" className="inputs" />
-          </div>
-
-          <div className="inputs-groups">
-            <label for="Bairro">Bairro</label>
-            <input type="text" name="Nome" id="input-bairro" className="inputs" />
-          </div>
-
-          <div className="inputs-groups">
-            <label for="estado">Estados</label>
+            <label for="estado">CEP</label>
             <Select 
               id="estado"
               name="estado"
@@ -95,6 +93,17 @@ export default function PageCadastro() {
               classNamePrefix="custom-select"
             />
           </div>
+
+          <div className="inputs-groups">
+            <label for="nome">Cidade</label>
+            <input type="text" name="Nome" id="input-name" className="inputs" />
+          </div>
+
+          <div className="inputs-groups">
+            <label for="Bairro">Bairro</label>
+            <input type="text" name="Nome" id="input-bairro" className="inputs" />
+          </div>
+
 
           <div className="inputs-groups">
             <label for="text">Telefone</label>
