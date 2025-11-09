@@ -69,16 +69,14 @@ export default function PageCadastro() {
 
           <div className="inputs-groups">
             <label for="CPF">CPF</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              name="Nome"
-              id="input-cpf"
-              className="inputs"
-              maxLength={11}
+            <InputMask
+              className="inputs-Cad-Fun"
+              name="cpf"
+              replacement={{ 0: /\d/ }}
+              mask="000.000.000-00"
+              placeholder="000.000.000-00"
               value={cpf}
               onChange={(e) => setCpf(e.target.value)}
-              placeholder="Apenas numeros"
             />
           </div>
 
@@ -117,13 +115,14 @@ export default function PageCadastro() {
 
           <div className="inputs-groups">
             <label for="text">Telefone</label>
-            <input
-              type="tel"
-              name="tel"
-              id=""
-              className="inputs"
+            <InputMask
+              className="inputs-Cad-Fun"
+              name="telefone"
+              mask="(99) 99999-9999"
+              replacement={{ 9: /\d/ }}
               value={telefone}
               onChange={(e) => setTelefone(e.target.value)}
+              placeholder="(00) 00000-0000"
             />
           </div>
         </main>
@@ -133,16 +132,14 @@ export default function PageCadastro() {
 
           <div className="inputs-groups">
             <label for="estado">CEP</label>
-            <input
-              type="text"
-              name="CEP"
-              id="CEP"
+            <InputMask 
+              className="inputs-Cad-Fun"
               value={cep}
-              className="inputs"
-              onChange={(e) => setCep(e.target.value)}
-              placeholder="Digite seu CEP(apenas numeros)"
+              onChange={(e)=> setCep(e.target.value)}
+              mask="99999-999"
+              replacement={{9: /\d/ }}
+              placeholder="00000-000"
               onBlur={searchCep}
-              maxLength={8}
             />
           </div>
 
@@ -215,7 +212,7 @@ export default function PageCadastro() {
           <div className="inputs-groups">
             <label for="Email">Email</label>
             <input
-              type="text"
+              type="email"
               name=""
               id=""
               className="inputs"

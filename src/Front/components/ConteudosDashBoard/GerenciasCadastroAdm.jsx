@@ -3,9 +3,9 @@ import "./style/GerenciasCadastro.css";
 import DatePicker from "react-datepicker";
 import { useState } from "react";
 import "react-datepicker/dist/react-datepicker.css";
-import BtnCustomized from "../../components/Buttons/ButtonCustomized";
+import BtnCustomized from "../Buttons/ButtonCustomized";
 import CurrencyInput from "react-currency-input-field";
-import InputMask from "react-input-mask";
+import { InputMask } from "@react-input/mask";
 
 export default function GerenciarCadastro() {
   const [nome, setNome] = useState("");
@@ -71,12 +71,12 @@ export default function GerenciarCadastro() {
 
           <div className="input-groups-CadFun">
             <label htmlFor="CPF">CPF</label>
-            <input
-              type="text"
-              name=""
-              id=""
+            <InputMask
               className="inputs-Cad-Fun"
-              maxLength={11}
+              name="cpf"
+              replacement={{ 0: /\d/ }}
+              mask="000.000.000-00"
+              placeholder="000.000.000-00"
               value={cpf}
               onChange={(e) => setCpf(e.target.value)}
             />
@@ -120,6 +120,7 @@ export default function GerenciarCadastro() {
               className="inputs-Cad-Fun"
               name="telefone"
               mask="(99) 99999-9999"
+              replacement={{ 9: /\d/ }}
               value={telefone}
               onChange={(e) => setTelefone(e.target.value)}
               placeholder="(00) 00000-0000"
@@ -132,16 +133,14 @@ export default function GerenciarCadastro() {
 
           <div className="input-groups-CadFun">
             <label for="estado">CEP</label>
-            <input
-              type="text"
-              name="CEP"
-              id="CEP"
-              value={cep}
+            <InputMask
               className="inputs-Cad-Fun"
+              value={cep}
               onChange={(e) => setCep(e.target.value)}
-              placeholder="Digite seu CEP(apenas numeros)"
+              mask="99999-999"
+              replacement={{ 9: /\d/ }}
+              placeholder="00000-000"
               onBlur={searchCep}
-              maxLength={8}
             />
           </div>
 
@@ -214,7 +213,7 @@ export default function GerenciarCadastro() {
           <div className="input-groups-CadFun">
             <label for="Email">Email</label>
             <input
-              type="text"
+              type="email"
               name=""
               id=""
               className="inputs-Cad-Fun"
@@ -251,6 +250,13 @@ export default function GerenciarCadastro() {
           </div>
         </section>
       </form>
+      <BtnCustomized
+        size="medium"
+        TypeText="strong"
+        text="Cadastre-se"
+        showImg="hidden"
+        onClick={goPageInicialPacient}
+      />
     </div>
   );
 }
