@@ -132,12 +132,12 @@ export default function PageCadastro() {
 
           <div className="inputs-groups">
             <label for="estado">CEP</label>
-            <InputMask 
+            <InputMask
               className="inputs-Cad-Fun"
               value={cep}
-              onChange={(e)=> setCep(e.target.value)}
+              onChange={(e) => setCep(e.target.value)}
               mask="99999-999"
-              replacement={{9: /\d/ }}
+              replacement={{ 9: /\d/ }}
               placeholder="00000-000"
               onBlur={searchCep}
             />

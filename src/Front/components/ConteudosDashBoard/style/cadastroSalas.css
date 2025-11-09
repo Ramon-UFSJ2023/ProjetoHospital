@@ -53,7 +53,10 @@
   outline: none;
   width: 500px;
 }
-
+.cadastro-Sala-Leitos {
+  display: flex;
+  flex-direction: column;
+}
 .cadastro-Sala-Leitos label {
   color: #000000;
   font-weight: bolder;

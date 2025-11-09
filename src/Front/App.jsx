@@ -15,7 +15,7 @@ export default function App() {
       <Route path="/page-inicial-paciente" element={<DashBoardPaciente />} />
       <Route path="/login-funcionario" element={<FuncionarioLogin />} />
       <Route path="/page-cad-paciente" element={<PageCadastro />}/>
-      <Route path="/page-func-adm" element={<TelaFuncionarioAdmin />}/>
+      <Route path="/page-func-adm" element={<TelaFuncionarioAdmin />} />
     </Routes>
   );
 }
