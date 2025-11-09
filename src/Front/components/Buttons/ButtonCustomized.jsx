@@ -8,7 +8,7 @@ export default function BtnCustomized({
   img,
   variant,
   showImg,
-  TypeBtn
+  TypeBtn,
 }) {
   const Class = ["btn", `btn-${size}`, `btn-${variant}`].join(" ");
   const ClassText = ["textBtn", `textBtn-${TypeText}`].join(" ");

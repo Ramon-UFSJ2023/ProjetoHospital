@@ -83,12 +83,6 @@ export default function GerenciarCadastro() {
       });
   };
 
-  useEffect(() => {
-    fetch(
-      "https://gist.githubusercontent.com/allanrodrigol/93e8a15b3e230f0f5139/raw/405e3f17d230f0663f25c78b408e001f66063b45/especialidades.json"
-    );
-  }, []);
-
   return (
     <div className="container-conteudo-cadastro">
       <form action="" method="post" className="form-cad-fun">

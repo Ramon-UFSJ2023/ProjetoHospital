@@ -9,18 +9,28 @@
   height: 82vh;
   padding: 1rem;
   padding-top: 0;
-  border: 1px solid black;
 }
 
-.LinesOptions{
-    border: 1px solid red;
-    height: 50%;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    justify-content: space-around;
-    
+.LinesOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  justify-content: space-around;
+  margin-top: 5px;
 }
-.config-img-cad-sala{
-    height: 350px;
-    width: 250px;
+.LineDown {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr 1fr !important;
+  justify-content: space-around !important;
+}
+.optionsCad {
+  display: flex;
+  flex-direction: column; /* Coloca os itens um em cima do outro */
+  align-items: center; /* Centraliza horizontalmente */
+  gap: 10px;
+}
+.config-img-cad-sala {
+  height: 290px;
+  width: 250px;
+  object-fit: cover;
+  border-radius: 10px;
 }
