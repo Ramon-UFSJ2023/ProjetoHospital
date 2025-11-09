@@ -225,5 +225,34 @@ export default function CadastroDeSalas() {
     }
   };
 
+  const renderTelaLeitos = () => {
+    <>
+      <main className="container-cad-leitos">
+        <h1 className="title-group-cad-sala">
+          <form action="" className="form-cad-leito">
+            <div className="actions-cad-leito">
+              <h1 className="title-group-cad-leito"></h1>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Bloco do Leito</label>
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Anexo do Leito</label>
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Andar do Leito</label>
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Numero da Sala</label>
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Numero do Leito</label>
+              </div>
+            </div>
+          </form>
+        </h1>
+      </main>
+    </>;
+  };
+
   return <div className="container-Cad-Sala">{renderConteudo()}</div>;
 }
