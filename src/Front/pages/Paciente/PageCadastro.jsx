@@ -1,7 +1,7 @@
 import "./stylePaciente/cadastro.css";
 import BtnCustomized from "../../components/Buttons/ButtonCustomized";
 import { useNavigate } from "react-router-dom";
-import {useState } from "react";
+import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -84,7 +84,7 @@ export default function PageCadastro() {
 
           <div className="inputs-groups">
             <label for="date-born">Data de Nascimento</label>
-            <DatePicker 
+            <DatePicker
               selected={date}
               onChange={(newDate) => setDate(newDate)}
               className="inputs"

@@ -1,11 +1,31 @@
 import React from "react";
+import "./style/GerenciasCadastro.css"
 
-export default function GerenciarConsultas() {
+export default function GerenciarCadastro() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Gerenciamento de Consultas</h1>
-      {/* Coloque aqui tabelas, formulários, etc. */}
-      <p>Aqui você pode ver, aprovar ou cancelar as consultas.</p>
+    <div className="container">
+      <form action="" method="post">
+        <section className="sections-cad">
+          <h1>Informações Pessoais</h1>
+          <div className="input-groups">
+            <input type="text" name="" id="" />
+          </div>
+        </section>
+
+        <section className="sections-cad">
+          <h1>Informações Pessoais</h1>
+          <div className="input-groups">
+            <input type="text" name="" id="" />
+          </div>
+        </section>
+
+        <section className="sections-cad">
+          <h1>Informações Pessoais</h1>
+          <div className="input-groups">
+            <input type="text" name="" id="" />
+          </div>
+        </section>
+      </form>
     </div>
   );
 }
