@@ -4,8 +4,8 @@ import DatePicker from "react-datepicker";
 import { useState } from "react";
 import "react-datepicker/dist/react-datepicker.css";
 import BtnCustomized from "../../components/Buttons/ButtonCustomized";
-import CurrencyInput from 'react-currency-input-field';
-import InputMask from 'react-input-mask';
+import CurrencyInput from "react-currency-input-field";
+import InputMask from "react-input-mask";
 
 export default function GerenciarCadastro() {
   const [nome, setNome] = useState("");
@@ -59,7 +59,14 @@ export default function GerenciarCadastro() {
           <h1 className="title-group">Informações Pessoais</h1>
           <div className="input-groups-CadFun">
             <label htmlFor="Nome">Nome</label>
-            <input type="text" name="" id="" className="inputs-Cad-Fun" />
+            <input
+              type="text"
+              name=""
+              id=""
+              className="inputs-Cad-Fun"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+            />
           </div>
 
           <div className="input-groups-CadFun">
@@ -70,6 +77,8 @@ export default function GerenciarCadastro() {
               id=""
               className="inputs-Cad-Fun"
               maxLength={11}
+              value={cpf}
+              onChange={(e) => setCpf(e.target.value)}
             />
           </div>
 
@@ -92,7 +101,13 @@ export default function GerenciarCadastro() {
 
           <div className="input-groups-CadFun">
             <label htmlFor="gender">Genero</label>
-            <select name="" id="" className="inputs-Cad-Fun gender-input">
+            <select
+              name=""
+              id=""
+              className="inputs-Cad-Fun gender-input"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            >
               <option value="">Selecione seu Gênero</option>
               <option value="Masculino">Masculino</option>
               <option value="Feminino">Feminino</option>
@@ -101,7 +116,7 @@ export default function GerenciarCadastro() {
 
           <div className="input-groups-CadFun">
             <label htmlFor="">Telefone</label>
-            <InputMask 
+            <InputMask
               className="inputs-Cad-Fun"
               name="telefone"
               mask="(99) 99999-9999"
@@ -110,7 +125,6 @@ export default function GerenciarCadastro() {
               placeholder="(00) 00000-0000"
             />
           </div>
-
         </section>
 
         <section className="sections-cad">
@@ -223,7 +237,7 @@ export default function GerenciarCadastro() {
           <h1 className="title-group">Informações Adicionais</h1>
           <div className="input-groups-CadFun">
             <label htmlFor="">Salario</label>
-            <CurrencyInput 
+            <CurrencyInput
               id="salario"
               className="inputs-Cad-Fun"
               placeholder="R$ 0,00"
