@@ -23,6 +23,9 @@ export default function GerenciarCadastro() {
   const [telefone, setTelefone] = useState("");
   const [password, setPassword] = useState("");
   const [typeCad, setTypeCad] = useState("medico");
+  const [admin, SetAdmin] = useState("");
+  const [conselho, SetConselho] = useState("");
+  const [especialidade, SetEspecialidade] = useState("");
   const today = new Date();
 
   const min18Years = new Date(
@@ -85,7 +88,7 @@ export default function GerenciarCadastro() {
       <form action="" method="post" className="form-cad-fun">
         <div className="form-sections">
           <section className="sections-cad">
-            <h1 className="title-group">Informações Pessoais</h1>
+            <h1 className="title-group-func">Informações Pessoais</h1>
             <div className="input-groups-CadFun">
               <label htmlFor="Nome">Nome</label>
               <input
@@ -158,7 +161,7 @@ export default function GerenciarCadastro() {
           </section>
 
           <section className="sections-cad">
-            <h1 className="title-group">Endereço</h1>
+            <h1 className="title-group-func">Endereço</h1>
 
             <div className="input-groups-CadFun">
               <label for="estado">CEP</label>
@@ -238,7 +241,7 @@ export default function GerenciarCadastro() {
           </section>
 
           <section className="sections-cad">
-            <h1 className="title-group">Informações de Login</h1>
+            <h1 className="title-group-func">Informações de Login</h1>
             <div className="input-groups-CadFun">
               <label for="Email">Email</label>
               <input
@@ -261,11 +264,27 @@ export default function GerenciarCadastro() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            {typeCad === "medico" && (
+            {typeCad == "medico" && (
               <>
-                <h1 className="title-group">Informações Adicionais</h1>
-                <div className="input-groups-CadFun">
-                  <label htmlFor="">Salario</label>
+                <h1 className="title-group-func title-group-last-section">Informações Funcionario</h1>
+                
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="Administrador" className="title-group-func-label">Especialidade</label>
+                  <select
+                    name=""
+                    id=""
+                    value={especialidade}
+                    onChange={(e) => SetEspecialidade(e.target.value)}
+                    placeholderText="teste"
+                    className="inputs-Cad-Fun gender-input"
+                  >
+                    <option value={1}>Cirurgião Geral</option>
+                    <option value={0}>Psiquiatra</option>
+                  </select>
+                </div>
+
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="" className="title-group-func-label">Salario</label>
                   <CurrencyInput
                     id="salario"
                     className="inputs-Cad-Fun"
@@ -275,12 +294,39 @@ export default function GerenciarCadastro() {
                     groupSeparator="."
                     decimalSeparator=","
                     value={salario}
-                    onValueChange={(value, salario) => setSalario(value)}
+                    onValueChange={(value, name) => setSalario(value)}
                   />
+                </div>
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="Administrador" className="title-group-func-label">Administrador</label>
+                  <select
+                    name=""
+                    id=""
+                    value={admin}
+                    onChange={(e) => SetAdmin(e.target.value)}
+                    placeholderText="teste"
+                    className="inputs-Cad-Fun gender-input"
+                  >
+                    <option value={1}>Administrador</option>
+                    <option value={0}>Não Administrador</option>
+                  </select>
+                </div>
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="Administrador" className="title-group-func-label">Conselho</label>
+                  <select
+                    name=""
+                    id=""
+                    value={conselho}
+                    onChange={(e) => SetConselho(e.target.value)}
+                    placeholderText="teste"
+                    className="inputs-Cad-Fun gender-input"
+                  >
+                    <option value={1}>Conselheiro</option>
+                    <option value={0}>Não Conselheiro</option>
+                  </select>
                 </div>
               </>
             )}
-            ;
           </section>
         </div>
 
@@ -291,14 +337,16 @@ export default function GerenciarCadastro() {
               TypeText="strong"
               text="Paciente"
               showImg="hidden"
-              onClick={setTypeCad("paciente")}
+              onClick={() => setTypeCad("paciente")}
+              TypeBtn="button"
             />
             <BtnCustomized
               size="medium"
               TypeText="strong"
               text="Medico"
               showImg="hidden"
-              onClick={setTypeCad("Medico")}
+              onClick={() => setTypeCad("medico")}
+              TypeBtn="button"
             />
           </div>
           <div className="action-group-right">
@@ -308,6 +356,7 @@ export default function GerenciarCadastro() {
               text="Cadastrar"
               showImg="hidden"
               onClick={handleSubmit}
+              TypeBtn="submit"
             />
           </div>
         </div>
