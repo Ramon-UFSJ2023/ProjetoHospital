@@ -1,5 +1,23 @@
 import "./dashboard.css";
+import PropTypes from "prop-types";
 
-export default function DashBoard() {
-  return <div className="background-dashboard"></div>;
+export default function DashBoard({conteudo}) {
+  const rendCont = () =>{
+    switch (conteudo) {
+      case "Consultas":
+        return <h1>teste</h1>
+    
+      default:
+        return <h1>teste 2</h1>
+    }
+  };
+  return (
+  <div className="background-dashboard">
+    {rendCont()}
+  </div>);
+}
+
+
+DashBoard.propTypes = {
+  conteudo: PropTypes.string,
 }
