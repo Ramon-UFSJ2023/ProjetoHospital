@@ -5,3 +5,4 @@ export const functionsPacienteNavBarAdm = [
   { label: "Pacientes" },
   { label: "Cadastrar" },
 ];
+

@@ -1,0 +1,30 @@
+import "./dashboardFunAdm.css";
+import GerenciasCadastroAdm from "../ConteudosDashBoard/GerenciasCadastroAdm";
+import PropTypes from "prop-types";
+
+export default function DashBoardFuncionarioAdm({ stateNow }) {
+  const rendCont = () => {
+    switch (stateNow) {
+      case "Consultas":
+        return <h1>Tela de Consultas</h1>;
+      case "Reservas":
+        return <h1>Tela de Reservas</h1>;
+      case "Cirurgias":
+        return <h1>Tela de Cirurgias</h1>;
+      case "Pacientes":
+        return <h1>Tela de Pacientes</h1>;
+
+      // CORREÇÃO: Mude "Cadstrar" para "Cadastrar"
+      case "Cadastrar":
+        return <GerenciasCadastroAdm />;
+
+      default:
+        return <h1>Tela de Consultas</h1>;
+    }
+  };
+  return <div className="background-dashboard">{rendCont()}</div>;
+}
+
+DashBoardFuncionarioAdm.propTypes = {
+  stateNow: PropTypes.string,
+};

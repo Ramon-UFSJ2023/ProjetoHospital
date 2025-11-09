@@ -1,23 +1,20 @@
 import "./dashboardFunAdm.css";
-import GerenciarCad from "../ConteudosDashBoard/GerenciasCadastroAdm";
+import GerenciasCadastroAdm from "../ConteudosDashBoard/GerenciasCadastroAdm";
 import PropTypes from "prop-types";
 
-export default function DashBoardFuncionarioAdm(stateNow){
+export default function DashBoardFuncionarioAdm({stateNow}){
   const rendCont=()=>{
     switch (stateNow) {
+      case "Consultas":
       case "Cadastrar":
-        return <GerenciarCad />
-        break;
+        return <GerenciasCadastroAdm />;
     
       default:
-        break;
+        return <h1>teste</h1>
     }
-  }
+  };
 
-  return (
-  <div className="background-dashboard">
-    {rendCont()}
-  </div>);
+  return <div className="background-dashboard">{rendCont()}</div>;
 }
 
 DashBoardFuncionarioAdm.propTypes = {
