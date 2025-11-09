@@ -119,8 +119,8 @@ export default function PageCadastro() {
             <label for="text">Telefone</label>
             <input
               type="tel"
-              name="Nome"
-              id="input-name"
+              name="tel"
+              id=""
               className="inputs"
               value={telefone}
               onChange={(e) => setTelefone(e.target.value)}

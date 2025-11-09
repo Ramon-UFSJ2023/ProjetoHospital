@@ -6,6 +6,7 @@ export default function DashBoardFuncionarioAdm({ stateNow }) {
   const rendCont = () => {
     switch (stateNow) {
       case "Consultas":
+        return <h1>Consultas</h1>
       case "Cadastrar":
         return <GerenciasCadastroAdm />;
 

@@ -4,6 +4,64 @@
   box-sizing: border-box;
 }
 
-.container{
-    
+.container-conteudo-cadastro {
+  max-height: 80vh;
+  height: 80vh;
+}
+
+.form-cad-fun {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  height: 80vh;
+}
+
+.input-groups-CadFun {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.input-groups-CadFun label {
+  color: #000000;
+  font-weight: bolder;
+  font-size: 20px;
+  padding: 5px; 
+}
+
+.inputs-Cad-Fun {
+  height: 40px;
+  border-radius: 50px;
+  padding-left: 25px;
+  font-size: 15px;
+  background-color: #fca2a2;
+  color: aliceblue;
+  font-weight: bold;
+  outline: none;
+  width: 100%;
+}
+#input-date {
+  padding-right: 15px;
+}
+.gender-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.logradouro-group {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+.logradouro-group .inputs-Cad-Fun:first-child {
+  width: 75%;
+  border-radius: 50px 0 0 50px;
+  border-right: 1px solid #f98e8e;
+}
+
+.logradouro-group .inputs-Cad-Fun:last-child {
+  width: 25%;
+  border-radius: 0 50px 50px 0;
+  padding-left: 15px;
 }

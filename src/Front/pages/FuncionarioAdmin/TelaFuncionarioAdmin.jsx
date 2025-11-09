@@ -4,7 +4,7 @@ import { functionsPacienteNavBarAdm } from "../../config/itensSecondNavBarAdm";
 import "./styleADM.css";
 import { useState } from "react";
 
-export default function DashBoardFunAdm() {
+export default function TelaFuncionarioAdmin() {
   const [stateAtual, setStateAtual] = useState(
     functionsPacienteNavBarAdm[0].label
   );
