@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { InputMask } from "@react-input/mask";
+
 
 export default function PageCadastro() {
   const navigate = useNavigate();
