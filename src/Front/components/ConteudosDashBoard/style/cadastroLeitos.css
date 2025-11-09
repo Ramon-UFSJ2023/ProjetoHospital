@@ -1,0 +1,43 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.actions-cad-leito {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: 5px;
+}
+.cadastro-leitos {
+  display: flex;
+  flex-direction: column;
+}
+
+.cadastro-leitos label {
+  color: #000000;
+  font-weight: bolder;
+  font-size: 20px;
+  padding: 5px;
+}
+
+.inputs-Cad-Leitos {
+  height: 40px;
+  margin: 5px;
+  border-radius: 50px;
+  padding-left: 25px;
+  font-size: 15px;
+  background-color: #fca2a2;
+  color: aliceblue;
+  font-weight: bold;
+  outline: none;
+  width: 500px;
+}
+
+.title-group-sala {
+  text-align: center;
+  font-weight: bold;
+  color: #9f2a2a;
+  margin-top: 10px;
+  font-size: 24px !important;
+}

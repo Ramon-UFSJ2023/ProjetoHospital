@@ -1,20 +1,48 @@
 import "./style/cadastroSalas.css";
-import ImgSalaLeitos from "../../assets/salas_leitos.jpg";
-import ImgLeitos from "../../assets/leitos.jpg";
-import ImgLocal from "../../assets/localizacoes.jpg";
-import ImgSalaCirurgia from "../../assets/salaCirurgia.jpg";
-import ImgConsultorios from "../../assets/consultorios.png";
+import "./style/cadastroLeitos.css";
+import ImgSalaLeitos from "../../assets/SalaLeitos.png";
+import ImgLeitos from "../../assets/SalaLeito.png";
+import ImgLocal from "../../assets/localidade.png";
+import ImgSalaCirurgia from "../../assets/salaCirurgica.png";
+import ImgConsultorios from "../../assets/consultorio.png";
 import BtnCustomized from "../Buttons/ButtonCustomized";
 import { useState } from "react";
 
 export default function CadastroDeSalas() {
   const [telaAtual, setTelaAtual] = useState("menu");
 
-  const [blocoSalaLeito, setBlocoSalaLeito] = useState("");
-  const [anexoSalaLeito, setAnexoSalaLeito] = useState("");
-  const [andarSalaLeito, setAndarSalaLeito] = useState("");
-  const [numeroSalaLeito, setNumeroSalaLeito] = useState("");
+  const [bloco, setBloco] = useState("");
+  const [anexo, setAnexo] = useState("");
+  const [andar, setAndar] = useState("");
+  const [numero, setNumero] = useState("");
   const [tipoSalaLeito, setTipoSalaLeito] = useState("");
+  const [capacidadeSalaCirurgica, setCapacidadeSalaCirurgica] = useState("");
+  const [numeroLeito, setNumeroLeito] = useState("");
+  const [especialidadeConsultorio, setEspecialidadeConsultorio] = useState("");
+
+  const renderConteudo = () => {
+    switch (telaAtual) {
+      case "sala-leitos":
+        return renderCadSalaLeitos();
+
+      case "leitos":
+        return renderTelaLeitos();
+
+      case "localizacoes":
+        return renderTelaCadLocalizacao();
+
+      case "sala-cirurgica":
+        return renderTelaCadSalaCirurgica();
+
+      case "Consultorios":
+        return renderTelaConsultorios();
+
+      case "menu":
+        return renderMenu();
+      default:
+        return renderMenu();
+    }
+  };
 
   const renderMenu = () => (
     <>
@@ -33,6 +61,7 @@ export default function CadastroDeSalas() {
             showImg="hidden"
             TypeBtn="button"
             onClick={() => setTelaAtual("sala-leitos")}
+            onChange={(e) => setTelaAtual(e.target.value)}
           />
         </div>
 
@@ -45,6 +74,7 @@ export default function CadastroDeSalas() {
             showImg="hidden"
             TypeBtn="button"
             onClick={() => setTelaAtual("leitos")}
+            onChange={(e) => setTelaAtual(e.target.value)}
           />
         </div>
 
@@ -62,6 +92,7 @@ export default function CadastroDeSalas() {
             showImg="hidden"
             TypeBtn="button"
             onClick={() => setTelaAtual("localizacoes")}
+            onChange={(e) => setTelaAtual(e.target.value)}
           />
         </div>
       </main>
@@ -83,6 +114,7 @@ export default function CadastroDeSalas() {
             showImg="hidden"
             TypeBtn="button"
             onClick={() => setTelaAtual("sala-cirurgica")}
+            onChange={(e) => setTelaAtual(e.target.value)}
           />
         </div>
 
@@ -100,13 +132,13 @@ export default function CadastroDeSalas() {
             showImg="hidden"
             TypeBtn="button"
             onClick={() => setTelaAtual("Consultorios")}
+            onChange={(e) => setTelaAtual(e.target.value)}
           />
         </div>
         <div></div>
       </main>
     </>
   );
-
   const renderCadSalaLeitos = () => (
     <>
       <main className="container-cad-salas-leitos">
@@ -120,8 +152,8 @@ export default function CadastroDeSalas() {
                 name=""
                 id=""
                 className="inputs-Cad-Sala-Leitos"
-                value={blocoSalaLeito}
-                onChange={(e) => setBlocoSalaLeito(e.target.value)}
+                value={bloco}
+                onChange={(e) => setBloco(e.target.value)}
                 placeholder="Digite o Bloco Aqui"
               />
             </div>
@@ -133,8 +165,8 @@ export default function CadastroDeSalas() {
                 name=""
                 id=""
                 className="inputs-Cad-Sala-Leitos"
-                value={anexoSalaLeito}
-                onChange={(e) => setAnexoSalaLeito(e.target.value)}
+                value={anexo}
+                onChange={(e) => setAnexo(e.target.value)}
                 placeholder="Digite o Anexo aqui"
               />
             </div>
@@ -146,8 +178,8 @@ export default function CadastroDeSalas() {
                 name=""
                 id=""
                 className="inputs-Cad-Sala-Leitos"
-                value={andarSalaLeito}
-                onChange={(e) => setAndarSalaLeito(e.target.value)}
+                value={andar}
+                onChange={(e) => setAndar(e.target.value)}
                 placeholder="Digite o Andar aqui"
               />
             </div>
@@ -159,8 +191,8 @@ export default function CadastroDeSalas() {
                 name=""
                 id=""
                 className="inputs-Cad-Sala-Leitos"
-                value={numeroSalaLeito}
-                onChange={(e) => setNumeroSalaLeito(e.target.value)}
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
                 placeholder="Digite o Numero da Sala aqui"
               />
             </div>
@@ -192,66 +224,306 @@ export default function CadastroDeSalas() {
       </main>
     </>
   );
-
-  const renderConteudo = () => {
-    switch (telaAtual) {
-      case "sala-leitos":
-        return renderCadSalaLeitos();
-
-      case "leitos":
-        return renderTelaLeitos();
-
-      case "localizacoes":
-        return (
-          <div>
-            <h1>teste localiza ai cuzao</h1>
-          </div>
-        );
-
-      case "sala-cirurgia":
-        return (
-          <div>
-            <h1>Vou te enfiar a peixeira</h1>
-          </div>
-        );
-
-      case "consultorios":
-        return renderTelaConsultorios();
-
-      case "menu":
-        return renderMenu();
-      default:
-        return renderMenu();
-    }
-  };
-
   const renderTelaLeitos = () => {
-    <>
-      <main className="container-cad-leitos">
-        <h1 className="title-group-cad-sala">
+    return (
+      <>
+        <main className="container-cad-leitos">
+          <h1 className="title-group-sala">Cadastro de Leito</h1>
           <form action="" className="form-cad-leito">
             <div className="actions-cad-leito">
-              <h1 className="title-group-cad-leito"></h1>
               <div className="cadastro-leitos">
                 <label htmlFor="">Bloco do Leito</label>
+                <input
+                  type="text"
+                  className="inputs-Cad-Leitos"
+                  value={bloco}
+                  onChange={(e) => setBloco(e.target.value)}
+                  placeholder="Digite o Bloco Aqui"
+                />
               </div>
               <div className="cadastro-leitos">
                 <label htmlFor="">Anexo do Leito</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={anexo}
+                  onChange={(e) => setAnexo(e.target.value)}
+                  placeholder="Digite o Anexo aqui"
+                />
               </div>
+
               <div className="cadastro-leitos">
                 <label htmlFor="">Andar do Leito</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={andar}
+                  onChange={(e) => setAndar(e.target.value)}
+                  placeholder="Digite o Andar aqui"
+                />
               </div>
               <div className="cadastro-leitos">
                 <label htmlFor="">Numero da Sala</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                  placeholder="Digite o Numero da Sala aqui"
+                />
               </div>
               <div className="cadastro-leitos">
                 <label htmlFor="">Numero do Leito</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={numeroLeito}
+                  onChange={(e) => setNumeroLeito(e.target.value)}
+                  placeholder="Digite o Numero do Leito aqui"
+                />
               </div>
             </div>
+            <div className="form-actions-cad-leito">
+              <BtnCustomized
+                showImg="hidden"
+                size="small"
+                text="Cadastrar Leito"
+                TypeText="strong"
+                TypeBtn="button"
+              />
+            </div>
           </form>
-        </h1>
-      </main>
-    </>;
+        </main>
+      </>
+    );
+  };
+  const renderTelaCadLocalizacao = () => {
+    return (
+      <>
+        <main className="container-cad-leitos">
+          <h1 className="title-group-sala">Cadastro de Localização</h1>
+          <form action="" className="form-cad-leito">
+            <div className="actions-cad-leito">
+              <div className="cadastro-leitos">
+                <label htmlFor="">Bloco do Leito</label>
+                <input
+                  type="text"
+                  className="inputs-Cad-Leitos"
+                  value={bloco}
+                  onChange={(e) => setBloco(e.target.value)}
+                  placeholder="Digite o Bloco Aqui"
+                />
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Anexo do Leito</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={anexo}
+                  onChange={(e) => setAnexo(e.target.value)}
+                  placeholder="Digite o Anexo aqui"
+                />
+              </div>
+
+              <div className="cadastro-leitos">
+                <label htmlFor="">Andar do Leito</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={andar}
+                  onChange={(e) => setAndar(e.target.value)}
+                  placeholder="Digite o Andar aqui"
+                />
+              </div>
+            </div>
+
+            <div className="form-actions-cad-leito">
+              <BtnCustomized
+                showImg="hidden"
+                size="small"
+                text="Cadastrar"
+                TypeText="strong"
+                TypeBtn="button"
+              />
+            </div>
+          </form>
+        </main>
+      </>
+    );
+  };
+  const renderTelaCadSalaCirurgica = () => {
+    return (
+      <>
+        <main className="container-cad-leitos">
+          <h1 className="title-group-sala">Cadastro Sala Cirurgica</h1>
+          <form action="" className="form-cad-leito">
+            <div className="actions-cad-leito">
+              <div className="cadastro-leitos">
+                <label htmlFor="">Bloco do Leito</label>
+                <input
+                  type="text"
+                  className="inputs-Cad-Leitos"
+                  value={bloco}
+                  onChange={(e) => setBloco(e.target.value)}
+                  placeholder="Digite o Bloco Aqui"
+                />
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Anexo do Leito</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={anexo}
+                  onChange={(e) => setAnexo(e.target.value)}
+                  placeholder="Digite o Anexo aqui"
+                />
+              </div>
+
+              <div className="cadastro-leitos">
+                <label htmlFor="">Andar do Leito</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={andar}
+                  onChange={(e) => setAndar(e.target.value)}
+                  placeholder="Digite o Andar aqui"
+                />
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Numero da Sala</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                  placeholder="Digite o Numero da Sala aqui"
+                />
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Capacidade</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={capacidadeSalaCirurgica}
+                  onChange={(e) => setCapacidadeSalaCirurgica(e.target.value)}
+                  placeholder="Digite a Capacidade"
+                />
+              </div>
+            </div>
+            <div className="form-actions-cad-leito">
+              <BtnCustomized
+                showImg="hidden"
+                size="small"
+                text="Cadastrar Sala"
+                TypeText="strong"
+                TypeBtn="button"
+              />
+            </div>
+          </form>
+        </main>
+      </>
+    );
+  };
+  const renderTelaConsultorios = () => {
+    return (
+      <>
+        <main className="container-cad-leitos">
+          <h1 className="title-group-sala">Cadastro de Consultorio</h1>
+          <form action="" className="form-cad-leito">
+            <div className="actions-cad-leito">
+              <div className="cadastro-leitos">
+                <label htmlFor="">Bloco</label>
+                <input
+                  type="text"
+                  className="inputs-Cad-Leitos"
+                  value={bloco}
+                  onChange={(e) => setBloco(e.target.value)}
+                  placeholder="Digite o Bloco Aqui"
+                />
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Anexo</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={anexo}
+                  onChange={(e) => setAnexo(e.target.value)}
+                  placeholder="Digite o Anexo aqui"
+                />
+              </div>
+
+              <div className="cadastro-leitos">
+                <label htmlFor="">Andar</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={andar}
+                  onChange={(e) => setAndar(e.target.value)}
+                  placeholder="Digite o Andar aqui"
+                />
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Numero</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                  placeholder="Digite o Numero da Sala aqui"
+                />
+              </div>
+              <div className="cadastro-leitos">
+                <label htmlFor="">Especialidade</label>
+                <input
+                  type="text"
+                  name=""
+                  id=""
+                  className="inputs-Cad-Leitos"
+                  value={especialidadeConsultorio}
+                  onChange={(e) => setEspecialidadeConsultorio(e.target.value)}
+                  placeholder="Digite a Especialiadade"
+                />
+              </div>
+            </div>
+            <div className="form-actions-cad-leito">
+              <BtnCustomized
+                showImg="hidden"
+                size="small"
+                text="Cadastrar Sala"
+                TypeText="strong"
+                TypeBtn="button"
+              />
+            </div>
+          </form>
+        </main>
+      </>
+    );
   };
 
   return <div className="container-Cad-Sala">{renderConteudo()}</div>;
