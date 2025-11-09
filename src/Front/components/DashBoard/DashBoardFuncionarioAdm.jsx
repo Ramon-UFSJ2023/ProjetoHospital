@@ -1,14 +1,28 @@
 import "./dashboardFunAdm.css";
-import GerenciasCadastroAdm from "../ConteudosDashBoard/GerenciasCadastroAdm";
+import GerenciasCadastroAdm from "../ConteudosDashBoard/GerenciasCadastroFunByAdm";
+import CadastroSala from "../ConteudosDashBoard/CadastroDeSalas";
 import PropTypes from "prop-types";
 
-export default function DashBoardFuncionarioAdm({ stateNow }) {
+export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
   const rendCont = () => {
     switch (stateNow) {
-      case "Consultas":
-        return <h1>Consultas</h1>
-      case "Cadastrar":
+      case itens[0].label:
+        return <h1>Consultas</h1>;
+
+      case itens[1].label:
+        return <h1>Reservas</h1>;
+
+      case itens[2].label:
+        return <h1>Cirurgias</h1>
+
+      case itens[3].label:
+        return <h1>Pacientes</h1>;
+
+      case itens[4].label: // Cadastrar Funcionarios ou pacientes
         return <GerenciasCadastroAdm />;
+
+      case itens[5].label: //
+        return <CadastroSala />;
 
       default:
         return <h1>teste</h1>;

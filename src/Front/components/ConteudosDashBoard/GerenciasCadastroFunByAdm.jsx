@@ -83,8 +83,10 @@ export default function GerenciarCadastro() {
       });
   };
 
-  useEffect(()=>{
-    fetch('https://gist.githubusercontent.com/allanrodrigol/93e8a15b3e230f0f5139/raw/405e3f17d230f0663f25c78b408e001f66063b45/especialidades.json')
+  useEffect(() => {
+    fetch(
+      "https://gist.githubusercontent.com/allanrodrigol/93e8a15b3e230f0f5139/raw/405e3f17d230f0663f25c78b408e001f66063b45/especialidades.json"
+    );
   }, []);
 
   return (
@@ -270,10 +272,17 @@ export default function GerenciarCadastro() {
             </div>
             {typeCad == "medico" && (
               <>
-                <h1 className="title-group-func title-group-last-section">Informações Funcionario</h1>
-                
+                <h1 className="title-group-func title-group-last-section">
+                  Informações Funcionario
+                </h1>
+
                 <div className="input-groups-CadFun class-div-salario">
-                  <label htmlFor="Administrador" className="title-group-func-label">Especialidade</label>
+                  <label
+                    htmlFor="Administrador"
+                    className="title-group-func-label"
+                  >
+                    Especialidade
+                  </label>
                   <select
                     name=""
                     id=""
@@ -288,7 +297,9 @@ export default function GerenciarCadastro() {
                 </div>
 
                 <div className="input-groups-CadFun class-div-salario">
-                  <label htmlFor="" className="title-group-func-label">Salario</label>
+                  <label htmlFor="" className="title-group-func-label">
+                    Salario
+                  </label>
                   <CurrencyInput
                     id="salario"
                     className="inputs-Cad-Fun"
@@ -302,7 +313,12 @@ export default function GerenciarCadastro() {
                   />
                 </div>
                 <div className="input-groups-CadFun class-div-salario">
-                  <label htmlFor="Administrador" className="title-group-func-label">Administrador</label>
+                  <label
+                    htmlFor="Administrador"
+                    className="title-group-func-label"
+                  >
+                    Administrador
+                  </label>
                   <select
                     name=""
                     id=""
@@ -316,7 +332,12 @@ export default function GerenciarCadastro() {
                   </select>
                 </div>
                 <div className="input-groups-CadFun class-div-salario">
-                  <label htmlFor="Administrador" className="title-group-func-label">Conselho</label>
+                  <label
+                    htmlFor="Administrador"
+                    className="title-group-func-label"
+                  >
+                    Conselho
+                  </label>
                   <select
                     name=""
                     id=""

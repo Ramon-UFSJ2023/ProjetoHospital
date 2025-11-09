@@ -19,7 +19,7 @@ export default function TelaFuncionarioAdmin() {
         items={functionsPacienteNavBarAdm}
         onMenuItemClick={handleUpperBar}
       />
-      <DashBoardFunAdmIm stateNow={stateAtual} />
+      <DashBoardFunAdmIm stateNow={stateAtual} itens={functionsPacienteNavBarAdm} />
     </div>
   );
 }

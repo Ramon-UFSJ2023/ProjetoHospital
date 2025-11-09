@@ -1,0 +1,26 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.container-Cad-Sala {
+  max-height: 80vh;
+  height: 82vh;
+  padding: 1rem;
+  padding-top: 0;
+  border: 1px solid black;
+}
+
+.LinesOptions{
+    border: 1px solid red;
+    height: 50%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    justify-content: space-around;
+    
+}
+.config-img-cad-sala{
+    height: 350px;
+    width: 250px;
+}

@@ -4,5 +4,5 @@ export const functionsPacienteNavBarAdm = [
   { label: "Cirurgias" },
   { label: "Pacientes" },
   { label: "Cadastrar" },
+  { label: "Salas"},
 ];
-
