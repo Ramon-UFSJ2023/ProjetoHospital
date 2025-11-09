@@ -5,19 +5,21 @@ import "./styleADM.css";
 import { useState } from "react";
 
 export default function DashBoardFunAdm() {
-  const [stateAtual, setStateAtual] = useState(functionsPacienteNavBarAdm[0].label);
+  const [stateAtual, setStateAtual] = useState(
+    functionsPacienteNavBarAdm[0].label
+  );
 
-  const handleUpperBar = (label) =>{
+  const handleUpperBar = (label) => {
     setStateAtual(label);
   };
 
   return (
     <div className="container-dashboard-funAdm">
-      <UpperBar 
-      items={functionsPacienteNavBarAdm} 
-      onMenuItemClick={handleUpperBar}
+      <UpperBar
+        items={functionsPacienteNavBarAdm}
+        onMenuItemClick={handleUpperBar}
       />
-      <DashBoardFunAdmIm stateNow ={stateAtual} />
+      <DashBoardFunAdmIm stateNow={stateAtual} />
     </div>
   );
 }
