@@ -7,12 +7,32 @@
 .container-conteudo-cadastro {
   max-height: 80vh;
   height: 80vh;
+  padding: 1rem;
 }
 
 .form-cad-fun {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 80vh;
+}
+
+.form-sections {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  height: 80vh;
+  gap: 25px; /* Adiciona um espaço entre as colunas */
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between; /* É ISTO QUE EMPURRA O "CADASTRAR" PARA A DIREITA */
+  margin-top: 1rem; /* Espaço entre os inputs e os botões */
+}
+.action-group-left {
+  display: flex;
+  gap: 15px; /* Espaço entre o botão Paciente e Medico */
 }
 
 .input-groups-CadFun {
@@ -25,7 +45,7 @@
   color: #000000;
   font-weight: bolder;
   font-size: 20px;
-  padding: 5px; 
+  padding: 5px;
 }
 
 .inputs-Cad-Fun {
