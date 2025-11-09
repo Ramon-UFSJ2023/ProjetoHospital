@@ -34,3 +34,36 @@
   object-fit: cover;
   border-radius: 10px;
 }
+
+.actions-cad-sala-leitos {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: 5px;
+}
+
+.inputs-Cad-Sala-Leitos {
+  height: 40px;
+  margin: 5px;
+  border-radius: 50px;
+  padding-left: 25px;
+  font-size: 15px;
+  background-color: #fca2a2;
+  color: aliceblue;
+  font-weight: bold;
+  outline: none;
+  width: 500px;
+}
+
+.cadastro-Sala-Leitos label {
+  color: #000000;
+  font-weight: bolder;
+  font-size: 20px;
+  padding: 5px;
+}
+.title-group-cad-sala {
+  text-align: center;
+  font-weight: bold;
+  color: #9f2a2a;
+  margin-top: 10px;
+  font-size: 24px !important;
+}

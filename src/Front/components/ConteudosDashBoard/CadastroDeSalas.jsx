@@ -8,10 +8,16 @@ import BtnCustomized from "../Buttons/ButtonCustomized";
 import { useState } from "react";
 
 export default function CadastroDeSalas() {
-    const [typeCad, setTypeCad] = useState("");
+  const [telaAtual, setTelaAtual] = useState("menu");
 
-  return (
-    <div className="container-Cad-Sala">
+  const [blocoSalaLeito, setBlocoSalaLeito] = useState("");
+  const [anexoSalaLeito, setAnexoSalaLeito] = useState("");
+  const [andarSalaLeito, setAndarSalaLeito] = useState("");
+  const [numeroSalaLeito, setNumeroSalaLeito] = useState("");
+  const [tipoSalaLeito, setTipoSalaLeito] = useState("");
+
+  const renderMenu = () => (
+    <>
       <main className="LinesOptions">
         <div className="optionsCad">
           <img
@@ -26,6 +32,7 @@ export default function CadastroDeSalas() {
             text="Sala de Leitos"
             showImg="hidden"
             TypeBtn="button"
+            onClick={() => setTelaAtual("sala-leitos")}
           />
         </div>
 
@@ -37,6 +44,7 @@ export default function CadastroDeSalas() {
             text="Leitos"
             showImg="hidden"
             TypeBtn="button"
+            onClick={() => setTelaAtual("leitos")}
           />
         </div>
 
@@ -53,6 +61,7 @@ export default function CadastroDeSalas() {
             text="Localizações"
             showImg="hidden"
             TypeBtn="button"
+            onClick={() => setTelaAtual("localizacoes")}
           />
         </div>
       </main>
@@ -73,6 +82,7 @@ export default function CadastroDeSalas() {
             text="Sala Cirurgica"
             showImg="hidden"
             TypeBtn="button"
+            onClick={() => setTelaAtual("sala-cirurgica")}
           />
         </div>
 
@@ -89,11 +99,131 @@ export default function CadastroDeSalas() {
             text="Consultorios"
             showImg="hidden"
             TypeBtn="button"
+            onClick={() => setTelaAtual("Consultorios")}
           />
         </div>
         <div></div>
-
       </main>
-    </div>
+    </>
   );
+
+  const renderCadSalaLeitos = () => (
+    <>
+      <main className="container-cad-salas-leitos">
+        <h1 className="title-group-cad-sala">Cadastro da Sala de Leitos</h1>
+        <form action="" method="post" className="form-cad-sala-leitos">
+          <div className="actions-cad-sala-leitos">
+            <div className="cadastro-Sala-Leitos">
+              <label htmlFor="">Bloco</label>
+              <input
+                type="text"
+                name=""
+                id=""
+                className="inputs-Cad-Sala-Leitos"
+                value={blocoSalaLeito}
+                onChange={(e) => setBlocoSalaLeito(e.target.value)}
+                placeholder="Digite o Bloco Aqui"
+              />
+            </div>
+
+            <div className="cadastro-Sala-Leitos">
+              <label htmlFor="">Anexo</label>
+              <input
+                type="text"
+                name=""
+                id=""
+                className="inputs-Cad-Sala-Leitos"
+                value={anexoSalaLeito}
+                onChange={(e) => setAnexoSalaLeito(e.target.value)}
+                placeholder="Digite o Anexo aqui"
+              />
+            </div>
+
+            <div className="cadastro-Sala-Leitos">
+              <label htmlFor="">Andar</label>
+              <input
+                type="text"
+                name=""
+                id=""
+                className="inputs-Cad-Sala-Leitos"
+                value={andarSalaLeito}
+                onChange={(e) => setAndarSalaLeito(e.target.value)}
+                placeholder="Digite o Andar aqui"
+              />
+            </div>
+
+            <div className="cadastro-Sala-Leitos">
+              <label htmlFor="">Numero da Sala</label>
+              <input
+                type="text"
+                name=""
+                id=""
+                className="inputs-Cad-Sala-Leitos"
+                value={numeroSalaLeito}
+                onChange={(e) => setNumeroSalaLeito(e.target.value)}
+                placeholder="Digite o Numero da Sala aqui"
+              />
+            </div>
+
+            <div className="cadastro-Sala-Leitos">
+              <label htmlFor="">Tipo de Leito</label>
+              <input
+                type="text"
+                name=""
+                id=""
+                className="inputs-Cad-Sala-Leitos"
+                value={tipoSalaLeito}
+                onChange={(e) => setTipoSalaLeito(e.target.value)}
+                placeholder="Digite o tipo de Sala aqui"
+              />
+            </div>
+          </div>
+
+          <div className="form-actions-cad-sala-leitos">
+            <BtnCustomized
+              showImg="hidden"
+              size="small"
+              text="Cadastrar Sala"
+              TypeText="strong"
+              TypeBtn="button"
+            />
+          </div>
+        </form>
+      </main>
+    </>
+  );
+
+  const renderConteudo = () => {
+    switch (telaAtual) {
+      case "sala-leitos":
+        return renderCadSalaLeitos();
+
+      case "leitos":
+        return renderTelaLeitos();
+
+      case "localizacoes":
+        return (
+          <div>
+            <h1>teste localiza ai cuzao</h1>
+          </div>
+        );
+
+      case "sala-cirurgia":
+        return (
+          <div>
+            <h1>Vou te enfiar a peixeira</h1>
+          </div>
+        );
+
+      case "consultorios":
+        return renderTelaConsultorios();
+
+      case "menu":
+        return renderMenu();
+      default:
+        return renderMenu();
+    }
+  };
+
+  return <div className="container-Cad-Sala">{renderConteudo()}</div>;
 }
