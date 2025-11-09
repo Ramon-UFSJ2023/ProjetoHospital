@@ -18,6 +18,18 @@ export default function PageLogin({ title, showLinkCadastro }) {
   const goPageCadastroPaciente = () => {
     navigate("/page-cad-paciente");
   };
+  const goPageDashBoardFunAdm = () =>{
+    navigate("/page-func-adm")
+  }
+
+  const verifyAdm = () => {
+    if(title === "Login Funcionario" && cpf === "123"){
+      goPageDashBoardFunAdm();
+    }else if(title === "Login Paciente"){
+      goPageInicialPacient();
+    }
+  }
+
 
   const TrySubmit = (event) => {
     event.preventDefault();
@@ -40,7 +52,7 @@ export default function PageLogin({ title, showLinkCadastro }) {
             CPF
           </label>
           <input
-            type="number"
+            type="text"
             name=""
             id="cpfInput"
             className="input-right-side"
@@ -63,7 +75,7 @@ export default function PageLogin({ title, showLinkCadastro }) {
             TypeText="strong"
             text="Continuar >"
             showImg="hidden"
-            onClick={goPageInicialPacient}
+            onClick={verifyAdm}
           />
 
           {showLinkCadastro && (

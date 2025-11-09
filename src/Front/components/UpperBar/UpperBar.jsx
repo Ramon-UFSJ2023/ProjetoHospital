@@ -2,7 +2,7 @@ import "./upperBar.css";
 import lupaIcon from "../../assets/pesquisa.png";
 import PropTypes from "prop-types";
 
-export default function UpperBar({ items }) {
+export default function UpperBar({items, onMenuItemClick= () =>{} }) {
   if (!items || items.length === 0) {
     return null;
   }
@@ -27,7 +27,11 @@ export default function UpperBar({ items }) {
       <div className="functions-bar">
         <ul className="group-elements-second-navbar">
           {items.map((item, index) => (
-            <li key={index} className={elementsClass}>
+            <li
+              key={index}
+              className={elementsClass}
+              onClick={() => onMenuItemClick(item.label)}
+            >
               {item.label}
             </li>
           ))}
@@ -43,4 +47,5 @@ UpperBar.propTypes = {
       label: PropTypes.string.isRequired,
     })
   ).isRequired,
+  onMenuItemClick: PropTypes.func,
 };
