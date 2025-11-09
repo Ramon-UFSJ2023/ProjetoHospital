@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "./style/GerenciasCadastro.css";
 import DatePicker from "react-datepicker";
 import { useState } from "react";
@@ -25,7 +25,7 @@ export default function GerenciarCadastro() {
   const [typeCad, setTypeCad] = useState("medico");
   const [admin, SetAdmin] = useState("");
   const [conselho, SetConselho] = useState("");
-  const [especialidade, SetEspecialidade] = useState("");
+  const [especialidade, SetEspecialidade] = useState([]);
   const today = new Date();
 
   const min18Years = new Date(
@@ -83,11 +83,15 @@ export default function GerenciarCadastro() {
       });
   };
 
+  useEffect(()=>{
+    fetch('https://gist.githubusercontent.com/allanrodrigol/93e8a15b3e230f0f5139/raw/405e3f17d230f0663f25c78b408e001f66063b45/especialidades.json')
+  }, []);
+
   return (
     <div className="container-conteudo-cadastro">
       <form action="" method="post" className="form-cad-fun">
         <div className="form-sections">
-          <section className="sections-cad">
+          <section className="sections-cad side-information-personal-func">
             <h1 className="title-group-func">Informações Pessoais</h1>
             <div className="input-groups-CadFun">
               <label htmlFor="Nome">Nome</label>
