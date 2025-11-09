@@ -2,7 +2,7 @@ import "./upperBar.css";
 import lupaIcon from "../../assets/pesquisa.png";
 import PropTypes from "prop-types";
 
-export default function UpperBar({items, onMenuItemClick= () =>{} }) {
+export default function UpperBar({ items, onMenuItemClick = () => {} }) {
   if (!items || items.length === 0) {
     return null;
   }

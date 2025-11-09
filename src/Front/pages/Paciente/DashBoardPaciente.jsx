@@ -18,7 +18,7 @@ export default function DashBoardPaciente() {
         items={functionsPacienteNavBar}
         onMenuItemClick={handleMenuClick}
       />
-      <DashBoardPacienteImport conteudo={stateAtual} />
+      <DashBoardPacienteImport conteudo={stateAtual} itens={functionsPacienteNavBar}/>
     </div>
   );
 }
