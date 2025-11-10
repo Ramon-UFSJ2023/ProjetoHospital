@@ -10,13 +10,13 @@ app.use(cors());
 app.use(express.json());
 
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '10.%7Mpa?6~V',
-  database: 'hospital',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+  host: 'localhost',
+  user: 'root',
+  password: '10.%7Mpa?6~V',
+  database: 'hospital',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 app.post('/api/cadastro-paciente', async (req, res) => {
@@ -273,6 +273,325 @@ app.get('/api/admin/buscar-pacientes', async (req, res) => {
     if (connection) {
       connection.release();
     }
+  }
+});
+
+app.get('/api/admin/buscar-funcionarios', async (req, res) => {
+  const { busca } = req.query; 
+  const searchTerm = busca ? `%${busca}%` : '%%'; 
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    // Query que busca em Funcionários e junta com Usuário, Médico e Enfermeiro
+    const query = `
+      SELECT 
+        u.cpf, 
+        u.primeiro_nome, 
+        u.sobrenome, 
+        u.email, 
+        f.Salario,
+        f.Eh_admin,
+        -- Cria uma coluna 'cargo' baseada nas outras tabelas
+        CASE
+            WHEN m.cpf IS NOT NULL THEN CONCAT('Médico (', m.Especialidade, ')')
+            WHEN e.cpf IS NOT NULL THEN e.Formacao
+            ELSE 'Administrativo/Outro'
+        END AS cargo
+      FROM 
+        hospital.usuario u
+      JOIN 
+        hospital.funcionario f ON u.cpf = f.cpf
+      LEFT JOIN
+        hospital.medico m ON f.cpf = m.cpf
+      LEFT JOIN
+        hospital.enfermeiro e ON f.cpf = e.cpf
+      WHERE 
+        u.cpf LIKE ? OR CONCAT(u.primeiro_nome, ' ', u.sobrenome) LIKE ?
+      ORDER BY 
+        u.primeiro_nome;
+    `;
+    
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm]);
+    
+    res.status(200).json(rows); // Retorna a lista de funcionários
+
+  } catch (error) {
+    console.error('Erro ao buscar funcionários:', error);
+    res.status(500).json({ message: 'Erro interno no servidor ao buscar funcionários.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+app.get('/api/admin/buscar-consultas', async (req, res) => {
+  const { busca } = req.query; 
+  const searchTerm = busca ? `%${busca}%` : '%%'; 
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    // Query que junta consulta com os nomes de usuário do paciente (up) e do médico (um)
+    const query = `
+      SELECT 
+        c.CPF_P,
+        c.Numero,
+        CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
+        CONCAT(um.primeiro_nome, ' ', um.sobrenome) AS nome_medico,
+        DATE_FORMAT(c.Data_Inicio, '%d/%m/%Y %H:%i') AS data_consulta,
+        CONCAT(c.Bloco_Consultorio, ' / Andar ', c.Andar_Consultorio, ' / Sala ', c.N_Consultorio) AS localizacao,
+        c.Valor,
+        c.Esta_Paga,
+        c.Internacao
+      FROM 
+        hospital.consulta c
+      JOIN 
+        hospital.usuario up ON c.CPF_P = up.cpf -- 'up' = Usuário Paciente
+      JOIN 
+        hospital.usuario um ON c.CPF_M = um.cpf -- 'um' = Usuário Médico
+      WHERE
+        -- Busca pelo nome do paciente, nome do médico, ou CPF de um deles
+        CONCAT(up.primeiro_nome, ' ', up.sobrenome) LIKE ? OR
+        CONCAT(um.primeiro_nome, ' ', um.sobrenome) LIKE ? OR
+        c.CPF_P LIKE ? OR
+        c.CPF_M LIKE ?
+      ORDER BY 
+        c.Data_Inicio DESC; -- Mostra as consultas mais recentes primeiro
+    `;
+    
+    // Precisamos passar o searchTerm 4 vezes, uma para cada '?' na query
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm, searchTerm]);
+    
+    res.status(200).json(rows); // Retorna a lista de consultas
+
+  } catch (error) {
+    console.error('Erro ao buscar consultas:', error);
+    res.status(500).json({ message: 'Erro interno no servidor ao buscar consultas.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+app.get('/api/admin/buscar-cirurgias', async (req, res) => {
+  const { busca } = req.query; 
+  const searchTerm = busca ? `%${busca}%` : '%%'; 
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    // Query complexa que junta cirurgia, paciente (up), e médicos (um)
+    const query = `
+      SELECT 
+        c.CPF_P,
+        c.Numero,
+        CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
+        
+        -- Concatena todos os médicos que realizaram a cirurgia em uma string
+        GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
+        
+        DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
+        DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
+        CONCAT(c.Bloco_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
+        c.Valor,
+        c.Esta_Paga
+      FROM 
+        hospital.cirurgia c
+      JOIN 
+        hospital.usuario up ON c.CPF_P = up.cpf -- 'up' = Usuário Paciente
+      LEFT JOIN 
+        hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
+      LEFT JOIN 
+        hospital.usuario um ON r.CPF_M = um.cpf -- 'um' = Usuário Médico
+      
+      -- Agrupamos por cirurgia para o GROUP_CONCAT funcionar
+      GROUP BY
+        c.CPF_P, c.Numero
+      
+      -- HAVING filtra *depois* do agrupamento, permitindo buscar no nome do médico
+      HAVING 
+        nome_paciente LIKE ? OR
+        c.CPF_P LIKE ? OR
+        medicos LIKE ?
+        
+      ORDER BY 
+        c.Data_Entrada DESC; -- Cirurgias mais recentes primeiro
+    `;
+    
+    // Passa o searchTerm 3 vezes (para os 3 '?' do HAVING)
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
+    
+    res.status(200).json(rows); // Retorna a lista de cirurgias
+
+  } catch (error) {
+    console.error('Erro ao buscar cirurgias:', error);
+    res.status(500).json({ message: 'Erro interno no servidor ao buscar cirurgias.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+app.get('/api/admin/medicos', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT 
+        u.cpf, 
+        CONCAT(u.primeiro_nome, ' ', u.sobrenome) AS nome_completo, 
+        m.Especialidade
+      FROM 
+        hospital.usuario u
+      JOIN 
+        hospital.medico m ON u.cpf = m.cpf
+      ORDER BY
+        u.primeiro_nome;
+    `;
+    const [rows] = await connection.execute(query);
+    res.status(200).json(rows);
+
+  } catch (error) {
+    console.error('Erro ao buscar médicos:', error);
+    res.status(500).json({ message: 'Erro interno no servidor.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+// --- (NOVO) ROTA PARA LISTAR CONSULTÓRIOS ---
+app.get('/api/admin/consultorios', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT Bloco, Anexo, Andar, Numero, Especialidade 
+      FROM hospital.consultorio
+      ORDER BY Bloco, Andar, Numero;
+    `;
+    const [rows] = await connection.execute(query);
+    res.status(200).json(rows);
+
+  } catch (error) {
+    console.error('Erro ao buscar consultórios:', error);
+    res.status(500).json({ message: 'Erro interno no servidor.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+// --- (NOVO) ROTA PARA VER ALOCAÇÕES DE UM CONSULTÓRIO (trabalha_em) ---
+app.get('/api/admin/alocacoes', async (req, res) => {
+  const { Bloco, Anexo, Andar, Numero, data_inicio_semana, data_fim_semana } = req.query;
+
+  if (!Bloco || !Anexo || !Andar || !Numero || !data_inicio_semana || !data_fim_semana) {
+    return res.status(400).json({ message: 'Parâmetros de consultório e semana são obrigatórios.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    // Busca todas as alocações para aquele consultório, naquela semana, e traz o nome do médico
+    const query = `
+      SELECT 
+        t.CPF_M,
+        t.Data_Inicio,
+        t.Data_Fim,
+        CONCAT(u.primeiro_nome, ' ', u.sobrenome) AS nome_medico
+      FROM 
+        hospital.trabalha_em t
+      JOIN 
+        hospital.usuario u ON t.CPF_M = u.cpf
+      WHERE 
+        t.Bloco_Consultorio = ? AND
+        t.Anexo_Consultorio = ? AND
+        t.Andar_Consultorio = ? AND
+        t.N_Consultorio = ? AND
+        t.Data_Inicio >= ? AND
+        t.Data_Fim <= ?
+    `;
+    const [rows] = await connection.execute(query, [Bloco, Anexo, Andar, Numero, data_inicio_semana, data_fim_semana]);
+    res.status(200).json(rows);
+
+  } catch (error) {
+    console.error('Erro ao buscar alocações:', error);
+    res.status(500).json({ message: 'Erro interno no servidor.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+// --- (NOVO) ROTA PARA ALOCAR/DESALOCAR MÉDICO ---
+// Usamos POST para criar e DELETE para remover
+app.post('/api/admin/alocar', async (req, res) => {
+  const { cpf_m, bloco, anexo, andar, numero, data_inicio, data_fim } = req.body;
+
+  if (!cpf_m || !bloco || !andar || !anexo || !numero || !data_inicio || !data_fim) {
+    return res.status(400).json({ message: 'Dados de alocação incompletos.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      INSERT INTO hospital.trabalha_em 
+      (CPF_M, Bloco_Consultorio, Anexo_Consultorio, Andar_Consultorio, N_Consultorio, Data_Inicio, Data_Fim)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    await connection.execute(query, [cpf_m, bloco, anexo, andar, numero, data_inicio, data_fim]);
+    res.status(201).json({ message: 'Médico alocado com sucesso!' });
+
+  } catch (error) {
+    console.error('Erro ao alocar:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Conflito! Este horário já está ocupado.' });
+    }
+    res.status(500).json({ message: 'Erro interno no servidor.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/admin/desalocar', async (req, res) => {
+  const { cpf_m, bloco, anexo, andar, numero, data_inicio } = req.body;
+
+  if (!cpf_m || !bloco || !andar || !numero || !data_inicio) {
+    return res.status(400).json({ message: 'Dados de desalocação incompletos.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      DELETE FROM hospital.trabalha_em 
+      WHERE
+        CPF_M = ? AND
+        Bloco_Consultorio = ? AND
+        Anexo_Consultorio = ? AND
+        Andar_Consultorio = ? AND
+        N_Consultorio = ? AND
+        Data_Inicio = ?
+    `;
+    const [result] = await connection.execute(query, [cpf_m, bloco, anexo, andar, numero, data_inicio]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Horário liberado com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Alocação não encontrada para remover.' });
+    }
+    
+  } catch (error) {
+    console.error('Erro ao desalocar:', error);
+    res.status(500).json({ message: 'Erro interno no servidor.' });
+  } finally {
+    if (connection) connection.release();
   }
 });
 

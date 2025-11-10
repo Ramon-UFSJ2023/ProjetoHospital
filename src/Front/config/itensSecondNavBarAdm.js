@@ -1,8 +1,9 @@
 export const functionsPacienteNavBarAdm = [
   { label: "Consultas" },
-  { label: "Reservas" },
+  { label: "Alocações" },
   { label: "Cirurgias" },
   { label: "Pacientes" },
-  { label: "Cadastrar Pessoas" },
+  { label: "Funcionários" },
+  { label: "Cadastrar Pacientes/Funcionários" },
   { label: "Salas"},
 ];

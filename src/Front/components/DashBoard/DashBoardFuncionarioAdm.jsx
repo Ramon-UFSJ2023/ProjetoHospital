@@ -2,27 +2,35 @@ import "./dashboardFunAdm.css";
 import GerenciasCadastroAdm from "../ConteudosDashBoard/GerenciasCadastroFunByAdm";
 import CadastroSala from "../ConteudosDashBoard/CadastroDeSalas";
 import ListaPacientes from "../ConteudosDashBoard/ListaPacientes";
+import ListaFuncionario from "../ConteudosDashBoard/ListaFuncionario.jsx";
+import ListaConsultas from "../ConteudosDashBoard/ListaConsultas.jsx";
+import ListaCirurgias from "../ConteudosDashBoard/ListaCirurgias.jsx";
+import AlocacaoConsultorios from "../ConteudosDashBoard/AlocacaoConsultorios.jsx";
+
 import PropTypes from "prop-types";
 
 export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
   const rendCont = () => {
     switch (stateNow) {
       case itens[0].label:
-        return <h1>Consultas</h1>;
+        return <ListaConsultas />;
 
       case itens[1].label:
-        return <h1>Reservas</h1>;
+        return <AlocacaoConsultorios />;
 
       case itens[2].label:
-        return <h1>Cici</h1>
+        return <ListaCirurgias />;
 
       case itens[3].label:
         return <ListaPacientes />;
 
       case itens[4].label: // Cadastrar Funcionarios ou pacientes
+        return <ListaFuncionario />;
+        
+      case itens[5].label: // Cadastrar Funcionarios ou pacientes
         return <GerenciasCadastroAdm />;
 
-      case itens[5].label: //
+      case itens[6].label: //
         return <CadastroSala />;
 
       default:

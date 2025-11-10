@@ -1,0 +1,185 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.container-conteudo-admin {
+  height: 82vh;
+  padding: 1rem;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-groups-CadFun {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.input-groups-CadFun label {
+  color: #000000;
+  font-weight: bolder;
+  font-size: 20px;
+  padding: 5px;
+}
+.inputs-Cad-Fun {
+  height: 40px;
+  border-radius: 50px;
+  padding-left: 25px;
+  font-size: 15px;
+  background-color: #fca2a2;
+  color: aliceblue;
+  font-weight: bold;
+  outline: none;
+  width: 100%;
+  border: none;
+}
+.gender-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.title-group-func {
+  text-align: center;
+  font-weight: bold;
+  color: #9f2a2a;
+  margin-top: 10px;
+  font-size: 24px !important;
+  margin-bottom: 10px;
+}
+
+.container-conteudo-admin .alocacao-controles {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  background-color: #fff8f8;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  padding: 0 1rem;
+}
+.container-conteudo-admin .alocacao-controles .input-groups-CadFun {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.container-conteudo-admin .alocacao-controles .inputs-Cad-Fun {
+  background-color: #fde5e5;
+  color: #333;
+}
+.container-conteudo-admin .react-datepicker-wrapper .inputs-Cad-Fun {
+  width: 100%;
+}
+
+.container-conteudo-admin .alocacao-body {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  gap: 25px;
+  min-height: 0; 
+}
+
+.container-conteudo-admin .medico-list-container {
+  flex-basis: 30%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.container-conteudo-admin .medico-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 5px;
+  border: 2px solid #fde5e5;
+  border-radius: 10px;
+}
+.container-conteudo-admin .medico-list-item {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  border-radius: 50px;
+  background-color: #fde5e5;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+.container-conteudo-admin .medico-list-item:hover {
+  background-color: #fca2a2;
+  color: white;
+}
+.container-conteudo-admin .medico-list-item.selected {
+  background-color: #9f2a2a;
+  color: white;
+  font-weight: bold;
+  border-color: #fca2a2;
+}
+.container-conteudo-admin .medico-list-item small {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.container-conteudo-admin .schedule-container {
+  flex-basis: 70%;
+  overflow-y: auto; 
+  border-radius: 10px;
+  border: 2px solid #fca2a2;
+}
+.container-conteudo-admin .schedule-grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+.container-conteudo-admin .schedule-grid th,
+.container-conteudo-admin .schedule-grid td {
+  border: 1px solid #fde5e5;
+  padding: 8px;
+  text-align: center;
+  height: 60px; 
+  vertical-align: middle;
+}
+.container-conteudo-admin .schedule-grid th {
+  background-color: #fca2a2;
+  color: white;
+  font-size: 16px;
+  position: sticky;
+  top: 0;
+}
+.container-conteudo-admin .schedule-grid td:first-child { 
+  background-color: #fff8f8;
+  color: #9f2a2a;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.slot-livre {
+  background-color: #e0ffe0;
+  color: #005a00;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.slot-livre:hover {
+  background-color: #c0ffc0;
+  font-weight: bold;
+}
+
+.slot-ocupado {
+  background-color: #fca2a2;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  line-height: 1.3;
+  cursor: pointer; 
+}
+.slot-ocupado:hover {
+  background-color: #9f2a2a;
+}
+.slot-ocupado small {
+  font-size: 0.75rem;
+  font-weight: normal;
+  opacity: 0.8;
+}
