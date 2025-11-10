@@ -46,10 +46,10 @@ export default function GerenciarBuscaPaciente() {
       <form className="busca-container" onSubmit={handleSearchSubmit}>
         <input
           type="text"
-          className="inputs-Cad-Fun" // Reutilizando seu estilo de input
+          className="inputs-Cad-Fun"
           placeholder="Buscar por Nome ou CPF..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.targe.value)}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
         <BtnCustomized
           size="medium"
