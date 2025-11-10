@@ -54,6 +54,7 @@
   overflow-y: auto; /* Adiciona barra de rolagem SE necessário */
   border-radius: 10px;
   border: 2px solid #fca2a2;
+  max-height: 85%;
 }
 
 .tabela-resultados {

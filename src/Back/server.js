@@ -12,7 +12,7 @@ app.use(express.json());
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'R@mon84149845', // Verifique se essa é a senha correta que você ajustou
+  password: 'R@mon84149845',
   database: 'hospital',
   waitForConnections: true,
   connectionLimit: 10,
@@ -38,15 +38,11 @@ app.post('/api/cadastro-paciente', async (req, res) => {
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    // ----- CORREÇÃO AQUI -----
-    // A consulta foi re-indentada com espaços normais
     const queryUsuario = `
       INSERT INTO hospital.usuario 
       (cpf, email, senha, genero, data_nascimento, primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    // ----- FIM DA CORREÇÃO -----
-
     await connection.execute(queryUsuario, [
       cpf, email, senhaCriptografada, genero, data_nascimento,
       primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep
@@ -72,7 +68,6 @@ app.post('/api/cadastro-paciente', async (req, res) => {
       return res.status(409).json({ message: 'Erro: CPF ou Email já está cadastrado.' });
     }
     
-    // O erro de sintaxe (ER_PARSE_ERROR) aparecia aqui
     res.status(500).json({ message: 'Erro interno no servidor ao tentar cadastrar.' });
   
   } finally {
@@ -95,8 +90,33 @@ app.post('/api/login', async (req, res) => {
   try {
     connection = await pool.getConnection();
 
-    const queryUsuario = 'SELECT * FROM hospital.usuario WHERE cpf = ?';
-    const [rows] = await connection.execute(queryUsuario, [cpfLimpo]);
+    // Query única com LEFT JOINs para buscar todos os papéis do usuário
+    // O 'f.cpf' é usado para os joins de medico e enfermeiro, conforme seu schema
+    const queryLogin = `
+      SELECT 
+        u.cpf, 
+        u.senha,
+        u.primeiro_nome,
+        p.cpf IS NOT NULL AS eh_paciente,
+        f.cpf IS NOT NULL AS eh_funcionario,
+        f.Eh_admin,
+        m.cpf IS NOT NULL AS eh_medico,
+        e.cpf IS NOT NULL AS eh_enfermeiro
+      FROM 
+        hospital.usuario u
+      LEFT JOIN 
+        hospital.paciente p ON u.cpf = p.cpf
+      LEFT JOIN 
+        hospital.funcionario f ON u.cpf = f.cpf
+      LEFT JOIN 
+        hospital.medico m ON f.cpf = m.cpf
+      LEFT JOIN 
+        hospital.enfermeiro e ON f.cpf = e.cpf
+      WHERE 
+        u.cpf = ?;
+    `;
+    
+    const [rows] = await connection.execute(queryLogin, [cpfLimpo]);
 
     if (rows.length === 0) {
       return res.status(401).json({ message: 'CPF ou Senha inválidos.' });
@@ -110,29 +130,18 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'CPF ou Senha inválidos.' });
     }
 
-    let isPaciente = false;
-    let isFuncionario = false;
-    let isAdmin = false;
-
-    const [pacienteRows] = await connection.execute('SELECT cpf FROM hospital.paciente WHERE cpf = ?', [cpfLimpo]);
-    if (pacienteRows.length > 0) {
-      isPaciente = true;
-    }
-
-    const [funcRows] = await connection.execute('SELECT Eh_admin FROM hospital.funcionario WHERE cpf = ?', [cpfLimpo]);
-    if (funcRows.length > 0) {
-      isFuncionario = true;
-      isAdmin = funcRows[0].Eh_admin;
-    }
-
+    // O '!!' (dupla negação) converte os valores (1, 0, NULL) 
+    // do MySQL para 'true' ou 'false' no JSON.
     res.status(200).json({
       message: 'Login bem-sucedido!',
       user: {
         cpf: user.cpf,
         primeiro_nome: user.primeiro_nome,
-        eh_paciente: isPaciente,
-        eh_funcionario: isFuncionario,
-        eh_admin: isAdmin
+        eh_paciente: !!user.eh_paciente,
+        eh_funcionario: !!user.eh_funcionario,
+        eh_admin: !!user.Eh_admin, // 'Eh_admin' vem do 'f.Eh_admin'
+        eh_medico: !!user.eh_medico,
+        eh_enfermeiro: !!user.eh_enfermeiro
       }
     });
 
@@ -186,7 +195,7 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
       const queryPaciente = 'INSERT INTO hospital.paciente (cpf, Observacoes) VALUES (?, NULL)';
       await connection.execute(queryPaciente, [cpf]);
     
-    } else if (typeCad === 'medico' || typeCad === 'enfermeiro') {
+    } else if (typeCad === 'medico' || typeCad === 'enfermeiro' || typeCad === 'funcionario') { // Adicionado 'funcionario'
       
       const queryFuncionario = `
         INSERT INTO hospital.funcionario (cpf, Salario, Eh_admin, Eh_Conselho, Carga_Horaria)
@@ -198,21 +207,25 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
 
       if (typeCad === 'medico') {
         if (!crm || !especialidade) {
-          throw new Error('CRM e Especialidade são obrigatórios para Médicos.');
+          await connection.rollback(); // Desfaz a transação
+          return res.status(400).json({ message: 'CRM e Especialidade são obrigatórios para Médicos.' });
         }
         const queryMedico = 'INSERT INTO hospital.medico (cpf, CRM, Especialidade) VALUES (?, ?, ?)';
         await connection.execute(queryMedico, [cpf, crm, especialidade]);
       
       } else if (typeCad === 'enfermeiro') {
         if (!cofen || !formacao) {
-          throw new Error('COFEN e Formação são obrigatórios para Enfermeiros.');
+          await connection.rollback(); // Desfaz a transação
+          return res.status(400).json({ message: 'COFEN e Formação são obrigatórios para Enfermeiros.' });
         }
         const queryEnfermeiro = 'INSERT INTO hospital.enfermeiro (cpf, COFEN, Formacao) VALUES (?, ?, ?)';
         await connection.execute(queryEnfermeiro, [cpf, cofen, formacao]);
       }
+      // Se for 'funcionario', não faz mais nada (já inseriu em 'funcionario')
     
     } else {
-      throw new Error('Tipo de cadastro inválido.');
+      await connection.rollback(); // Desfaz a transação
+      return res.status(400).json({ message: 'Tipo de cadastro inválido.' });
     }
 
     await connection.commit();
@@ -471,7 +484,6 @@ app.get('/api/admin/medicos', async (req, res) => {
   }
 });
 
-// --- (NOVO) ROTA PARA LISTAR CONSULTÓRIOS ---
 app.get('/api/admin/consultorios', async (req, res) => {
   let connection;
   try {
@@ -492,7 +504,6 @@ app.get('/api/admin/consultorios', async (req, res) => {
   }
 });
 
-// --- (NOVO) ROTA PARA VER ALOCAÇÕES DE UM CONSULTÓRIO (trabalha_em) ---
 app.get('/api/admin/alocacoes', async (req, res) => {
   const { Bloco, Anexo, Andar, Numero, data_inicio_semana, data_fim_semana } = req.query;
 
@@ -533,8 +544,6 @@ app.get('/api/admin/alocacoes', async (req, res) => {
   }
 });
 
-// --- (NOVO) ROTA PARA ALOCAR/DESALOCAR MÉDICO ---
-// Usamos POST para criar e DELETE para remover
 app.post('/api/admin/alocar', async (req, res) => {
   const { cpf_m, bloco, anexo, andar, numero, data_inicio, data_fim } = req.body;
 
@@ -597,6 +606,74 @@ app.delete('/api/admin/desalocar', async (req, res) => {
     res.status(500).json({ message: 'Erro interno no servidor.' });
   } finally {
     if (connection) connection.release();
+  }
+});
+
+app.get('/api/admin/buscar-alocacoes-leitos', async (req, res) => {
+  const { busca } = req.query; 
+  const searchTerm = busca ? `%${busca}%` : '%%'; 
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    // Query que junta 'cuida_leito' com 'usuario' (para nome do enfermeiro)
+    // e 'leito' (para status de ocupação)
+    const query = `
+      SELECT 
+        cl.CPF_E,
+        CONCAT(u.primeiro_nome, ' ', u.sobrenome) AS nome_enfermeiro,
+        
+        -- Concatena a localização completa do leito
+        CONCAT(
+            'Bloco ', cl.Bloco_Leito, 
+            ', Anexo ', cl.Anexo_Leito, 
+            ', Andar ', cl.Andar_Leito, 
+            ', Sala ', cl.N_Sala_Leito, 
+            ', Leito ', cl.N_Leito
+        ) AS localizacao_leito,
+        
+        l.Ocupado AS leito_ocupado,
+        DATE_FORMAT(cl.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
+        DATE_FORMAT(cl.Data_Saida, '%d/%m/%Y %H:%i') AS data_saida_formatada,
+        
+        -- Coluna de status para saber se a alocação está ativa
+        CASE
+            WHEN cl.Data_Saida IS NULL THEN 'ATIVO'
+            ELSE 'FINALIZADO'
+        END AS status_alocacao
+      FROM 
+        hospital.cuida_leito cl
+      JOIN 
+        hospital.usuario u ON cl.CPF_E = u.cpf
+      LEFT JOIN 
+        hospital.leito l ON cl.Bloco_Leito = l.Bloco_Leito AND 
+                           cl.Anexo_Leito = l.Anexo_Leito AND 
+                           cl.Andar_Leito = l.Andar_Leito AND 
+                           cl.N_Sala_Leito = l.N_Sala AND 
+                           cl.N_Leito = l.N_Leito
+      WHERE
+        -- Busca por nome do enfermeiro, CPF ou número do leito
+        CONCAT(u.primeiro_nome, ' ', u.sobrenome) LIKE ? OR
+        cl.CPF_E LIKE ? OR
+        cl.N_Leito LIKE ?
+      ORDER BY 
+        cl.Data_Saida IS NULL DESC, -- Mostra ativos primeiro
+        cl.Data_Entrada DESC;      -- Depois os mais recentes
+    `;
+    
+    // 3 parâmetros de busca (para os 3 '?' da query)
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
+    
+    res.status(200).json(rows); 
+
+  } catch (error) {
+    console.error('Erro ao buscar alocações de leitos:', error);
+    res.status(500).json({ message: 'Erro interno no servidor ao buscar alocações.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
 

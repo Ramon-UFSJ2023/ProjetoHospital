@@ -183,3 +183,11 @@
   font-weight: normal;
   opacity: 0.8;
 }
+
+.medico-list{
+  max-height: 85% !important;
+}
+
+.schedule-container{
+  max-height: 99% !important;
+}
