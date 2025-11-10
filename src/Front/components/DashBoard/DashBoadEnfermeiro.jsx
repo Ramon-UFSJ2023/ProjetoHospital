@@ -3,17 +3,17 @@ import "./dashboardFunAdm.css";
 // import CadastroSala from "../ConteudosDashBoard/CadastroDeSalas";
 // import ListaPacientes from "../ConteudosDashBoard/ListaPacientes";
 // import ListaFuncionario from "../ConteudosDashBoard/ListaFuncionario.jsx";
-import ListaConsultas from "../ConteudosDashBoard/ListaConsultas.jsx";
+import ListaAlocacaoLeitos from "../ConteudosDashBoard/ListaAlocacaoLeitos.jsx";
 import ListaCirurgias from "../ConteudosDashBoard/ListaCirurgias.jsx";
 // import AlocacaoConsultorios from "../ConteudosDashBoard/AlocacaoConsultorios.jsx";
 
 import PropTypes from "prop-types";
 
-export default function DashBoardPaciente({ stateNow, itens }) {
+export default function DashBoardEnfermeiro({ stateNow, itens }) {
   const rendCont = () => {
     switch (stateNow) {
         case itens[0].label:
-            return <ListaConsultas />;
+            return <ListaAlocacaoLeitos />;
 
         case itens[1].label:
             return <ListaCirurgias />;
@@ -26,6 +26,6 @@ export default function DashBoardPaciente({ stateNow, itens }) {
   return <div className="background-dashboard">{rendCont()}</div>;
 }
 
-DashBoardPaciente.propTypes = {
+DashBoardEnfermeiro.propTypes = {
   stateNow: PropTypes.string,
 };

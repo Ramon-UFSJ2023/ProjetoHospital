@@ -4,6 +4,8 @@ import DashBoardPaciente from "./pages/Paciente/DashboardPaciente";
 import TelaFuncionarioAdmin from "./pages/FuncionarioAdmin/TelaFuncionarioAdmin";
 import FuncionarioLogin from "./pages/Funcionario/FuncionarioLogin";
 import PageCadastro from "./pages/Paciente/PageCadastro";
+import TelaMedico from "./pages/Medico/PageMedico";
+import TelaEnfermeiro from "./pages/Enfermeiro/PageEnfermeiro";
 import { Routes, Route } from "react-router-dom";
 import "./styles/global.css";
 
@@ -16,6 +18,8 @@ export default function App() {
       <Route path="/login-funcionario" element={<FuncionarioLogin />} />
       <Route path="/page-cad-paciente" element={<PageCadastro />}/>
       <Route path="/page-func-adm" element={<TelaFuncionarioAdmin />} />
+      <Route path="/page-medico" element={<TelaMedico />} />
+      <Route path="/page-enfermeiro" element={<TelaEnfermeiro />} />
     </Routes>
   );
 }

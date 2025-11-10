@@ -1,12 +1,12 @@
-import "./stylePaciente/dashBoardPaciente.css";
+import "./styleMedico/dashBoardMedico.css";
 import UpperBar from "../../components/UpperBar/UpperBar";
 import DashBoardPacienteImport from "../../components/DashBoard/DashBoardPaciente";
-import { functionsPacienteNavBar } from "../../config/itemsSecondNavBarPaciente";
+import { functionsMedicoNavBar } from "../../config/itemsSecondNavBarMedico";
 import { useState } from "react";
 
 export default function DashBoardPaciente() {
   const [stateAtual, setStateAtual] = useState(
-    functionsPacienteNavBar[0].label
+    functionsMedicoNavBar[0].label
   );
   const handleMenuClick = (label) => {
     setStateAtual(label);
@@ -17,12 +17,12 @@ export default function DashBoardPaciente() {
   return (
     <div className="container-dashboard-paciente">
       <UpperBar
-        items={functionsPacienteNavBar}
+        items={functionsMedicoNavBar}
         onMenuItemClick={handleMenuClick}
       />
       <DashBoardPacienteImport 
         stateNow={stateAtual} 
-        itens={functionsPacienteNavBar}
+        itens={functionsMedicoNavBar}
       />
     </div>
   );

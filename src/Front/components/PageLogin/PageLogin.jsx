@@ -19,9 +19,21 @@ export default function PageLogin({ title, showLinkCadastro }) {
   const goPageCadastroPaciente = () => {
     navigate("/page-cad-paciente");
   };
+
+  // --- NOVAS ROTAS DE REDIRECIONAMENTO ---
   const goPageDashBoardFunAdm = () => {
     navigate("/page-func-adm");
   };
+  const goPageDashBoardMedico = () => {
+    navigate("/page-medico"); // Rota para médicos
+  };
+  const goPageDashBoardEnfermeiro = () => {
+    navigate("/page-enfermeiro"); // Rota para enfermeiros
+  };
+  const goPageDashBoardFuncionarioComum = () => {
+    navigate("/page-funcionario-comum"); // Rota para funcionários comuns (não-admin, não-médico, não-enfermeiro)
+  };
+  // ----------------------------------------
 
   const TrySubmit = async (event) => {
     event.preventDefault();
@@ -47,20 +59,32 @@ export default function PageLogin({ title, showLinkCadastro }) {
       if (!response.ok) {
         alert(data.message);
       } else {
+        // Lógica de Paciente (sem mudanças)
         if (userType === 'paciente' && data.user.eh_paciente) {
           alert(data.message);
           goPageInicialPacient();
         
+        // --- LÓGICA DE FUNCIONÁRIO ATUALIZADA ---
         } else if (userType === 'funcionario' && data.user.eh_funcionario) {
           
+          alert(data.message); // Exibe a mensagem de sucesso "Login bem-sucedido"
+          
+          // Verifica os papéis em ordem de prioridade
           if (data.user.eh_admin) {
-            alert(data.message);
             goPageDashBoardFunAdm();
+          
+          } else if (data.user.eh_medico) {
+            goPageDashBoardMedico();
+          
+          } else if (data.user.eh_enfermeiro) {
+            goPageDashBoardEnfermeiro();
+          
           } else {
-            alert("Login de funcionário bem-sucedido (não-admin).");
-            // navigate("/page-funcionario-comum"); // (Exemplo)
+            // Se não for admin, nem médico, nem enfermeiro, é "comum"
+            goPageDashBoardFuncionarioComum();
           }
-
+        
+        // Tentativa de login no portal errado
         } else {
           alert("Acesso negado. Você não tem permissão para esta área.");
         }
@@ -95,6 +119,7 @@ export default function PageLogin({ title, showLinkCadastro }) {
             value={cpf}
             onChange={(e) => setCpf(e.target.value)}
             placeholder="Digite seu CPF (apenas números)"
+            required
           />
           <label htmlFor="passwordInput" className="Info-Login">
             Senha
@@ -107,12 +132,13 @@ export default function PageLogin({ title, showLinkCadastro }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Digite sua senha"
+            required
           />
           
           <ButtonCustom
             size="larger"
             TypeText="strong"
-            text="Continuar >"
+            text={isLoading ? "Carregando..." : "Continuar >"}
             showImg="hidden"
             type="submit" 
             disabled={isLoading} 
