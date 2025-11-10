@@ -3,6 +3,6 @@ export const functionsPacienteNavBarAdm = [
   { label: "Reservas" },
   { label: "Cirurgias" },
   { label: "Pacientes" },
-  { label: "Cadastrar" },
+  { label: "Cadastrar Pessoas" },
   { label: "Salas"},
 ];

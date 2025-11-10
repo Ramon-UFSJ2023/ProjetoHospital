@@ -101,3 +101,46 @@
   border-color: rgba(255, 255, 255, 0.534);
   cursor: pointer;
 }
+
+.profile-container {
+  grid-column: 3;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 30px;
+}
+
+.profile-select {
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: aliceblue;
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  transition: transform 0.2s ease-in-out;
+  padding: 5px;
+
+  background-color: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.profile-select:hover {
+  background-color: rgb(248, 162, 162, 0.3);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 4px outset;
+  border-radius: 10px;
+  border-color: rgba(255, 255, 255, 0.534);
+}
+
+.profile-select option {
+  background-color: #600505;
+  color: aliceblue;
+  font-weight: 600;
+  border: none;
+}

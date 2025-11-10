@@ -4,15 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { InputMask } from "@react-input/mask";
-
 
 export default function PageCadastro() {
   const navigate = useNavigate();
 
-  const goPageInicialPacient = () => {
-    navigate("/page-inicial-paciente");
-  };
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [cep, setCep] = useState("");
@@ -50,15 +45,75 @@ export default function PageCadastro() {
       });
   };
 
+  const formatarData = (dataJS) => {
+    if (!dataJS) return null;
+    const offset = dataJS.getTimezoneOffset();
+    const dataLocal = new Date(dataJS.getTime() - offset * 60 * 1000);
+    return dataLocal.toISOString().split("T")[0];
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const nomeCompleto = nome.split(" ");
+    const primeiro_nome = nomeCompleto[0] || "";
+    const sobrenome = nomeCompleto.slice(1).join(" ") || "";
+
+    const cpfLimpo = cpf.replace(/\D/g, "");
+    const cepLimpo = cep.replace(/\D/g, "");
+    const telefoneLimpo = telefone.replace(/\D/g, "");
+
+    const dataFormatada = formatarData(date);
+
+    const dadosPaciente = {
+      cpf: cpfLimpo,
+      email: email,
+      senha: password,
+      genero: gender,
+      data_nascimento: dataFormatada,
+      primeiro_nome: primeiro_nome,
+      sobrenome: sobrenome,
+      rua: logradouro,
+      cidade: cidade,
+      bairro: bairro,
+      numero: numero,
+      cep: cepLimpo,
+      telefone: telefoneLimpo,
+    };
+
+    try {
+      const response = await fetch("http://localhost:3001/api/cadastro-paciente", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dadosPaciente),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message);
+        navigate("/page-inicial-paciente");
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error("Erro de rede ou ao conectar com a API:", error);
+      alert("Não foi possível conectar ao servidor. Tente novamente mais tarde.");
+    }
+  };
+
   return (
     <div className="container">
       <h1 className="Title">Cadastro Paciente</h1>
 
-      <form className="page-cadastro" action="/cadastro" method="post">
+      <form className="page-cadastro" onSubmit={handleSubmit}>
         <main className="Input-cad" id="side-information-personal">
           <h1 className="title-group">Informações Pessoais</h1>
+
           <div className="inputs-groups">
-            <label for="nome">Nome</label>
+            <label htmlFor="nome">Nome Completo</label>
             <input
               type="text"
               name="Nome"
@@ -66,65 +121,69 @@ export default function PageCadastro() {
               className="inputs"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
+              required
             />
           </div>
 
           <div className="inputs-groups">
-            <label for="CPF">CPF</label>
-            <InputMask
+            <label htmlFor="CPF">CPF</label>
+            <input
+              type="text"
               className="inputs-Cad-Fun"
               name="cpf"
-              replacement={{ 0: /\d/ }}
-              mask="000.000.000-00"
               placeholder="000.000.000-00"
               value={cpf}
               onChange={(e) => setCpf(e.target.value)}
+              required
+              maxLength={14}
             />
           </div>
 
           <div className="inputs-groups">
-            <label for="date-born">Data de Nascimento</label>
+            <label htmlFor="date-born">Data de Nascimento</label>
             <DatePicker
               selected={date}
               onChange={(newDate) => setDate(newDate)}
               className="inputs"
               placeholderText="DD/MM/YYYY"
-              dateFormat="dd/mm/YYYY"
+              dateFormat="dd/MM/yyyy"
               showMonthDropdown
               scrollableMonthYearDropdown
               showYearDropdown
               scrollableYearDropdown
               yearDropdownItemNumber={100}
               maxDate={new Date()}
+              required
             />
           </div>
 
           <div className="inputs-groups">
-            <label for="Gender">Genêro</label>
+            <label htmlFor="Gender">Gênero</label>
             <select
-              name=""
-              id=""
+              name="gender"
+              id="gender"
               className="inputs gender-input"
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              placeholder="Selecione seu gênero"
+              required
             >
               <option value="">Selecione seu Gênero</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
             </select>
           </div>
 
           <div className="inputs-groups">
-            <label for="text">Telefone</label>
-            <InputMask
+            <label htmlFor="telefone">Telefone</label>
+            <input
+              type="text"
               className="inputs-Cad-Fun"
               name="telefone"
-              mask="(99) 99999-9999"
-              replacement={{ 9: /\d/ }}
               value={telefone}
               onChange={(e) => setTelefone(e.target.value)}
               placeholder="(00) 00000-0000"
+              required
+              maxLength={15}
             />
           </div>
         </main>
@@ -133,77 +192,82 @@ export default function PageCadastro() {
           <h1 className="title-group">Endereço</h1>
 
           <div className="inputs-groups">
-            <label for="estado">CEP</label>
-            <InputMask
+            <label htmlFor="cep">CEP</label>
+            <input
+              type="text"
               className="inputs-Cad-Fun"
               value={cep}
+              id="cep"
               onChange={(e) => setCep(e.target.value)}
-              mask="99999-999"
-              replacement={{ 9: /\d/ }}
               placeholder="00000-000"
               onBlur={searchCep}
+              required
+              maxLength={9}
             />
           </div>
 
           <div className="inputs-groups">
-            <label for="Estado">Estado</label>
+            <label htmlFor="Estado">Estado</label>
             <input
               type="text"
-              name="Nome"
+              name="Estado"
               id="input-estado"
               className="inputs"
               value={estado}
               onChange={(e) => setEstado(e.target.value)}
+              required
             />
           </div>
 
           <div className="inputs-groups">
-            <label for="Cidade">Cidade</label>
-
+            <label htmlFor="Cidade">Cidade</label>
             <input
               type="text"
-              name="Nome"
+              name="Cidade"
               id="input-cidade"
               className="inputs"
               value={cidade}
               onChange={(e) => setCidade(e.target.value)}
+              required
             />
           </div>
 
           <div className="inputs-groups">
-            <label for="Bairro">Bairro</label>
+            <label htmlFor="Bairro">Bairro</label>
             <input
               type="text"
               name="Bairro"
-              id="input-name"
+              id="input-bairro"
               className="inputs"
               value={bairro}
               onChange={(e) => setBairro(e.target.value)}
+              required
             />
           </div>
 
           <div className="inputs-groups">
-            <label for="Logradouro">Logradouro</label>
+            <label htmlFor="Logradouro">Logradouro</label>
             <div className="logradouro-group">
               <input
                 type="text"
                 name="Logradouro"
-                id=""
+                id="logradouro"
                 className="inputs"
                 placeholder="Rua"
                 value={logradouro}
                 onChange={(e) => setLogradouro(e.target.value)}
+                required
               />
-
               <input
                 type="text"
-                inputMode="numeric" // Melhora a experiência em celulares
+                inputMode="numeric"
                 name="Numero"
                 className="inputs"
                 placeholder="Nº"
                 value={numero}
                 onChange={(e) => setNumero(e.target.value)}
                 maxLength={5}
+                required
               />
             </div>
           </div>
@@ -211,27 +275,30 @@ export default function PageCadastro() {
 
         <main className="side-login">
           <h1 className="title-group">Informações de Login</h1>
+
           <div className="inputs-groups">
-            <label for="Email">Email</label>
+            <label htmlFor="Email">Email</label>
             <input
               type="email"
-              name=""
-              id=""
+              name="email"
+              id="email"
               className="inputs"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
 
           <div className="inputs-groups">
-            <label for="password">Senha</label>
+            <label htmlFor="password">Senha</label>
             <input
               type="password"
               name="Senha-cliente"
-              id=""
+              id="password"
               className="inputs"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </div>
         </main>
@@ -242,7 +309,7 @@ export default function PageCadastro() {
         TypeText="strong"
         text="Cadastre-se"
         showImg="hidden"
-        onClick={goPageInicialPacient}
+        onClick={handleSubmit}
       />
     </div>
   );

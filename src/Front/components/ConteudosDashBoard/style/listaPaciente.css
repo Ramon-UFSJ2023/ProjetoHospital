@@ -1,0 +1,92 @@
+/* --- Base (Copiado do seu GerenciasCadastro.css) --- */
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.container-conteudo-admin {
+  height: 82vh;
+  padding: 1rem;
+  padding-top: 0;
+  /* Adicionado para organizar a busca e a tabela */
+  display: flex;
+  flex-direction: column;
+}
+
+.inputs-Cad-Fun {
+  height: 40px;
+  border-radius: 50px;
+  padding-left: 25px;
+  font-size: 15px;
+  background-color: #fca2a2;
+  color: aliceblue;
+  font-weight: bold;
+  outline: none;
+  width: 100%;
+  border: none; /* Adicionado para remover borda padrão */
+}
+
+/* --- (NOVO) Estilos da Barra de Busca --- */
+.busca-container {
+  display: flex;
+  gap: 15px; /* Espaço entre o input e o botão */
+  align-items: center;
+  padding: 1.5rem 0; /* Mais espaço vertical */
+  width: 100%;
+}
+
+.busca-container .inputs-Cad-Fun {
+  flex-grow: 1; /* Faz o input ocupar o espaço disponível */
+  color: #333; /* Cor do texto digitado */
+  background-color: #fde5e5; /* Fundo mais claro para busca */
+}
+
+.busca-container ::placeholder {
+  color: #f0a0a0;
+  font-weight: normal;
+}
+
+/* --- (NOVO) Estilos da Tabela de Resultados --- */
+
+.resultados-container {
+  flex-grow: 1; /* Ocupa o resto da altura */
+  overflow-y: auto; /* Adiciona barra de rolagem SE necessário */
+  border-radius: 10px;
+  border: 2px solid #fca2a2;
+}
+
+.tabela-resultados {
+  width: 100%;
+  border-collapse: collapse; /* Tira espaço entre células */
+}
+
+.tabela-resultados th,
+.tabela-resultados td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #fde5e5;
+}
+
+.tabela-resultados th {
+  background-color: #fca2a2; /* Usa a cor principal */
+  color: white;
+  font-size: 16px;
+  position: sticky; /* Cabeçalho fica fixo ao rolar */
+  top: 0;
+}
+
+.tabela-resultados td {
+  color: #333;
+  font-size: 14px;
+}
+
+/* Efeito 'zebra' (linhas alternadas) */
+.tabela-resultados tbody tr:nth-child(even) {
+  background-color: #fff8f8;
+}
+
+.tabela-resultados tbody tr:hover {
+  background-color: #fde5e5;
+  cursor: default;
+}

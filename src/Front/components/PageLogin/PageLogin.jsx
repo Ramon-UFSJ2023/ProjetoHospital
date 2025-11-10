@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 export default function PageLogin({ title, showLinkCadastro }) {
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false); 
 
   const navigate = useNavigate();
   const goEscolhaAcesso = () => {
@@ -18,26 +19,61 @@ export default function PageLogin({ title, showLinkCadastro }) {
   const goPageCadastroPaciente = () => {
     navigate("/page-cad-paciente");
   };
-  const goPageDashBoardFunAdm = () =>{
-    navigate("/page-func-adm")
-  }
-
-  const verifyAdm = () => {
-    if(title === "Login Funcionario" && cpf === "123"){
-      goPageDashBoardFunAdm();
-    }else if(title === "Login Paciente"){
-      goPageInicialPacient();
-    }
-  }
-
-
-  const TrySubmit = (event) => {
-    event.preventDefault();
-    console.log("Tentativa de lidar com:");
-    console.log("CPF: ", cpf);
-    console.log("Senha: ", password);
-    //logica para envio ao banco
+  const goPageDashBoardFunAdm = () => {
+    navigate("/page-func-adm");
   };
+
+  const TrySubmit = async (event) => {
+    event.preventDefault();
+    setIsLoading(true); 
+
+    const userType = title === "Login Funcionario" ? "funcionario" : "paciente";
+    const cpfLimpo = cpf.replace(/\D/g, ''); 
+
+    try {
+      const response = await fetch('http://localhost:3001/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cpf: cpfLimpo,
+          password: password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message);
+      } else {
+        if (userType === 'paciente' && data.user.eh_paciente) {
+          alert(data.message);
+          goPageInicialPacient();
+        
+        } else if (userType === 'funcionario' && data.user.eh_funcionario) {
+          
+          if (data.user.eh_admin) {
+            alert(data.message);
+            goPageDashBoardFunAdm();
+          } else {
+            alert("Login de funcionário bem-sucedido (não-admin).");
+            // navigate("/page-funcionario-comum"); // (Exemplo)
+          }
+
+        } else {
+          alert("Acesso negado. Você não tem permissão para esta área.");
+        }
+      }
+
+    } catch (error) {
+      console.error('Erro de rede ou ao conectar com a API:', error);
+      alert('Não foi possível conectar ao servidor. Tente novamente mais tarde.');
+    }
+
+    setIsLoading(false); 
+  };
+
   return (
     <aside className="painel-Right">
       <div className="content">
@@ -58,6 +94,7 @@ export default function PageLogin({ title, showLinkCadastro }) {
             className="input-right-side"
             value={cpf}
             onChange={(e) => setCpf(e.target.value)}
+            placeholder="Digite seu CPF (apenas números)"
           />
           <label htmlFor="passwordInput" className="Info-Login">
             Senha
@@ -69,13 +106,16 @@ export default function PageLogin({ title, showLinkCadastro }) {
             className="input-right-side"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            placeholder="Digite sua senha"
           />
+          
           <ButtonCustom
             size="larger"
             TypeText="strong"
             text="Continuar >"
             showImg="hidden"
-            onClick={verifyAdm}
+            type="submit" 
+            disabled={isLoading} 
           />
 
           {showLinkCadastro && (

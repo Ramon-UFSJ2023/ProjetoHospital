@@ -1,6 +1,7 @@
 import "./dashboardFunAdm.css";
 import GerenciasCadastroAdm from "../ConteudosDashBoard/GerenciasCadastroFunByAdm";
 import CadastroSala from "../ConteudosDashBoard/CadastroDeSalas";
+import ListaPacientes from "../ConteudosDashBoard/ListaPacientes";
 import PropTypes from "prop-types";
 
 export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
@@ -13,10 +14,10 @@ export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
         return <h1>Reservas</h1>;
 
       case itens[2].label:
-        return <h1>Cirurgias</h1>
+        return <h1>Cici</h1>
 
       case itens[3].label:
-        return <h1>Pacientes</h1>;
+        return <ListaPacientes />;
 
       case itens[4].label: // Cadastrar Funcionarios ou pacientes
         return <GerenciasCadastroAdm />;

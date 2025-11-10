@@ -1,7 +1,7 @@
 import "./stylePaciente/dashBoardPaciente.css";
 import UpperBar from "../../components/UpperBar/UpperBar";
-import DashBoardPacienteImport from "../../components/DashBoard/DashBoard";
-import { functionsPacienteNavBar } from "../../config/itemsSecondNavBar";
+// import DashBoardPacienteImport from "../../components/DashBoard/DashBoard";
+import { functionsPacienteNavBar } from "../../config/itemsSecondNavBarPaciente";
 import { useState } from "react";
 
 export default function DashBoardPaciente() {
@@ -18,7 +18,7 @@ export default function DashBoardPaciente() {
         items={functionsPacienteNavBar}
         onMenuItemClick={handleMenuClick}
       />
-      <DashBoardPacienteImport conteudo={stateAtual} itens={functionsPacienteNavBar}/>
+      {/* <DashBoardPacienteImport conteudo={stateAtual} itens={functionsPacienteNavBar}/> */}
     </div>
   );
 }

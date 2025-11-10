@@ -1,18 +1,32 @@
 import "./upperBar.css";
 import lupaIcon from "../../assets/pesquisa.png";
 import PropTypes from "prop-types";
+// import { useNavigate } from "react-router-dom";
 
 export default function UpperBar({ items, onMenuItemClick = () => {} }) {
+  // const navigate = useNavigate();
+
   if (!items || items.length === 0) {
     return null;
   }
 
   const elementsClass = "elements-second-navbar";
 
+  const handleProfileChange = (event) => {
+    const selectedValue = event.target.value;
+
+    if (selectedValue === "config") {
+      console.log("Usuário selecionou: Configurações de conta");
+      // navigate('/configuracoes-conta');
+    } else if (selectedValue === "sair") {
+      console.log("Usuário selecionou: Sair");
+      // logout();
+    }
+  };
+
   return (
     <nav className="topper-bar">
       <div className="search-container">
-        <div className="img-Teste"></div>
         <form action="" className="input-form">
           <img src={lupaIcon} alt="" className="lupa-search" />
           <input
@@ -22,6 +36,20 @@ export default function UpperBar({ items, onMenuItemClick = () => {} }) {
             placeholder="Pesquise Aqui..."
           />
         </form>
+      </div>
+
+      <div className="profile-container">
+        <select
+          className="profile-select"
+          onChange={handleProfileChange}
+          defaultValue="conta"
+        >
+          <option value="conta" disabled>
+            Conta
+          </option>
+          <option value="config">Configurações de conta</option>
+          <option value="sair">Sair</option>
+        </select>
       </div>
 
       <div className="functions-bar">

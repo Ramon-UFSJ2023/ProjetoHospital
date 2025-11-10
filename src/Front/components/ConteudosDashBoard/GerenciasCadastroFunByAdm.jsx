@@ -5,7 +5,6 @@ import { useState } from "react";
 import "react-datepicker/dist/react-datepicker.css";
 import BtnCustomized from "../Buttons/ButtonCustomized";
 import CurrencyInput from "react-currency-input-field";
-import { InputMask } from "@react-input/mask";
 
 export default function GerenciarCadastro() {
   const [nome, setNome] = useState("");
@@ -23,9 +22,16 @@ export default function GerenciarCadastro() {
   const [telefone, setTelefone] = useState("");
   const [password, setPassword] = useState("");
   const [typeCad, setTypeCad] = useState("medico");
-  const [admin, SetAdmin] = useState("");
-  const [conselho, SetConselho] = useState("");
-  const [especialidade, SetEspecialidade] = useState([]);
+  
+  const [admin, setAdmin] = useState(0); 
+  const [conselho, setConselho] = useState(0); 
+  const [cargaHoraria, setCargaHoraria] = useState(40);
+
+  const [especialidade, setEspecialidade] = useState("Clinico Geral");
+  const [crm, setCrm] = useState("");
+  const [cofen, setCofen] = useState("");
+  const [formacao, setFormacao] = useState("Graduação em Enfermagem");
+
   const today = new Date();
 
   const min18Years = new Date(
@@ -34,30 +40,79 @@ export default function GerenciarCadastro() {
     today.getDate()
   );
 
-  const handleSubmit = (event) => {
-    // 1. Impede que o formulário recarregue a página
+  const formatarData = (dataJS) => {
+    if (!dataJS) return null;
+    const offset = dataJS.getTimezoneOffset();
+    const dataLocal = new Date(dataJS.getTime() - (offset * 60 * 1000));
+    return dataLocal.toISOString().split('T')[0];
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    console.log("Enviando cadastro para o tipo:", typeCad);
 
-    // 2. Mostra no console que funcionou
-    console.log("Formulário enviado!");
+    const nomeCompleto = nome.split(' ');
+    const primeiro_nome = nomeCompleto[0] || '';
+    const sobrenome = nomeCompleto.slice(1).join(' ') || '';
 
-    // 3. (Opcional) Mostra todos os dados que o formulário coletou
-    console.log({
-      nome,
-      cpf,
-      cep,
-      salario,
-      cidade,
-      estado,
-      bairro,
-      logradouro,
-      numero,
-      gender,
-      email,
-      date,
-      telefone,
-      password,
-    });
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    const cepLimpo = cep.replace(/\D/g, '');
+    const telefoneLimpo = telefone.replace(/\D/g, '');
+    const dataFormatada = formatarData(date);
+    
+    const salarioNumerico = typeCad !== 'paciente' ? (parseFloat(salario) || 0.0) : 0.0;
+
+    const dadosGerais = {
+      typeCad: typeCad, 
+      
+      cpf: cpfLimpo,
+      email: email,
+      senha: password,
+      genero: gender, 
+      data_nascimento: dataFormatada,
+      primeiro_nome: primeiro_nome,
+      sobrenome: sobrenome,
+      rua: logradouro,
+      cidade: cidade,
+      bairro: bairro,
+      numero: numero,
+      cep: cepLimpo,
+      
+      telefone: telefoneLimpo,
+
+      salario: salarioNumerico,
+      eh_admin: admin,
+      eh_conselho: conselho,
+      carga_horaria: cargaHoraria,
+
+      crm: crm,
+      especialidade: especialidade,
+
+      cofen: cofen,
+      formacao: formacao
+    };
+
+    try {
+      const response = await fetch('http://localhost:3001/api/admin/cadastro-geral', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dadosGerais),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message); 
+      } else {
+        alert(data.message); 
+      }
+
+    } catch (error) {
+      console.error('Erro de rede ou ao conectar com a API:', error);
+      alert('Não foi possível conectar ao servidor. Tente novamente mais tarde.');
+    }
   };
 
   const searchCep = (event) => {
@@ -85,32 +140,35 @@ export default function GerenciarCadastro() {
 
   return (
     <div className="container-conteudo-cadastro">
-      <form action="" method="post" className="form-cad-fun">
+      <form className="form-cad-fun" onSubmit={handleSubmit}>
         <div className="form-sections">
           <section className="sections-cad side-information-personal-func">
             <h1 className="title-group-func">Informações Pessoais</h1>
             <div className="input-groups-CadFun">
-              <label htmlFor="Nome">Nome</label>
+              <label htmlFor="Nome">Nome Completo</label>
               <input
                 type="text"
-                name=""
-                id=""
+                name="Nome"
+                id="Nome"
                 className="inputs-Cad-Fun"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
+                required
               />
             </div>
 
             <div className="input-groups-CadFun">
               <label htmlFor="CPF">CPF</label>
-              <InputMask
+              <input
+                type="text"
                 className="inputs-Cad-Fun"
                 name="cpf"
-                replacement={{ 0: /\d/ }}
-                mask="000.000.000-00"
+                id="CPF"
                 placeholder="000.000.000-00"
                 value={cpf}
                 onChange={(e) => setCpf(e.target.value)}
+                maxLength={14}
+                required
               />
             </div>
 
@@ -121,120 +179,124 @@ export default function GerenciarCadastro() {
                 onChange={(newDate) => setDate(newDate)}
                 className="inputs-Cad-Fun"
                 placeholderText="DD/MM/YYYY"
-                dateFormat="dd/mm/YYYY"
+                dateFormat="dd/MM/yyyy"
                 showMonthDropdown
                 scrollableMonthYearDropdown
                 showYearDropdown
                 scrollableYearDropdown
                 yearDropdownItemNumber={100}
-                maxDate={min18Years}
+                maxDate={typeCad === 'paciente' ? new Date() : min18Years} 
+                required
               />
             </div>
 
             <div className="input-groups-CadFun">
-              <label htmlFor="gender">Genero</label>
+              <label htmlFor="gender">Gênero</label>
               <select
-                name=""
-                id=""
+                name="gender"
+                id="gender"
                 className="inputs-Cad-Fun gender-input"
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
+                required
               >
-                <option value="">Selecione seu Gênero</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Feminino">Feminino</option>
+                <option value="">Selecione</option>
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
               </select>
             </div>
 
             <div className="input-groups-CadFun">
-              <label htmlFor="">Telefone</label>
-              <InputMask
+              <label htmlFor="telefone">Telefone</label>
+              <input
+                type="text"
                 className="inputs-Cad-Fun"
                 name="telefone"
-                mask="(99) 99999-9999"
-                replacement={{ 9: /\d/ }}
+                id="telefone"
                 value={telefone}
                 onChange={(e) => setTelefone(e.target.value)}
                 placeholder="(00) 00000-0000"
+                maxLength={15}
+                required
               />
             </div>
           </section>
 
           <section className="sections-cad">
             <h1 className="title-group-func">Endereço</h1>
-
             <div className="input-groups-CadFun">
-              <label for="estado">CEP</label>
-              <InputMask
-                className="inputs-Cad-Fun"
-                value={cep}
-                onChange={(e) => setCep(e.target.value)}
-                mask="99999-999"
-                replacement={{ 9: /\d/ }}
-                placeholder="00000-000"
-                onBlur={searchCep}
-              />
-            </div>
-
-            <div className="input-groups-CadFun">
-              <label for="Estado">Estado</label>
+              <label htmlFor="cep">CEP</label>
               <input
                 type="text"
-                name="Nome"
+                className="inputs-Cad-Fun"
+                value={cep}
+                id="cep"
+                onChange={(e) => setCep(e.target.value)}
+                placeholder="00000-000"
+                onBlur={searchCep}
+                maxLength={9}
+                required
+              />
+            </div>
+            <div className="input-groups-CadFun">
+              <label htmlFor="Estado">Estado</label>
+              <input
+                type="text"
+                name="Estado"
                 id="input-estado"
                 className="inputs-Cad-Fun"
                 value={estado}
                 onChange={(e) => setEstado(e.target.value)}
+                required
               />
             </div>
-
             <div className="input-groups-CadFun">
-              <label for="Cidade">Cidade</label>
-
+              <label htmlFor="Cidade">Cidade</label>
               <input
                 type="text"
-                name="Nome"
+                name="Cidade"
                 id="input-cidade"
                 className="inputs-Cad-Fun"
                 value={cidade}
                 onChange={(e) => setCidade(e.target.value)}
+                required
               />
             </div>
-
             <div className="input-groups-CadFun">
-              <label for="Bairro">Bairro</label>
+              <label htmlFor="Bairro">Bairro</label>
               <input
                 type="text"
                 name="Bairro"
-                id="input-name"
+                id="input-bairro"
                 className="inputs-Cad-Fun"
                 value={bairro}
                 onChange={(e) => setBairro(e.target.value)}
+                required
               />
             </div>
-
             <div className="input-groups-CadFun">
-              <label for="Logradouro">Logradouro</label>
+              <label htmlFor="Logradouro">Logradouro</label>
               <div className="logradouro-group">
                 <input
                   type="text"
                   name="Logradouro"
-                  id=""
+                  id="logradouro"
                   className="inputs-Cad-Fun"
                   placeholder="Rua"
                   value={logradouro}
                   onChange={(e) => setLogradouro(e.target.value)}
+                  required
                 />
-
                 <input
                   type="text"
-                  inputMode="numeric" // Melhora a experiência em celulares
+                  inputMode="numeric"
                   name="Numero"
                   className="inputs-Cad-Fun"
                   placeholder="Nº"
                   value={numero}
                   onChange={(e) => setNumero(e.target.value)}
                   maxLength={5}
+                  required
                 />
               </div>
             </div>
@@ -243,56 +305,39 @@ export default function GerenciarCadastro() {
           <section className="sections-cad">
             <h1 className="title-group-func">Informações de Login</h1>
             <div className="input-groups-CadFun">
-              <label for="Email">Email</label>
+              <label htmlFor="Email">Email</label>
               <input
                 type="email"
-                name=""
-                id=""
+                name="Email"
+                id="Email"
                 className="inputs-Cad-Fun"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             <div className="input-groups-CadFun">
-              <label for="password">Senha</label>
+              <label htmlFor="password">Senha</label>
               <input
                 type="password"
                 name="Senha-cliente"
-                id=""
+                id="password"
                 className="inputs-Cad-Fun"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
             </div>
-            {typeCad == "medico" && (
+
+            {typeCad !== "paciente" && (
               <>
                 <h1 className="title-group-func title-group-last-section">
-                  Informações Funcionario
+                  Informações de Funcionário
                 </h1>
-
+                
                 <div className="input-groups-CadFun class-div-salario">
-                  <label
-                    htmlFor="Administrador"
-                    className="title-group-func-label"
-                  >
-                    Especialidade
-                  </label>
-                  <select
-                    name=""
-                    id=""
-                    value={especialidade}
-                    onChange={(e) => SetEspecialidade(e.target.value)}
-                    placeholderText="teste"
-                    className="inputs-Cad-Fun gender-input"
-                  >
-                    <option value={1}>Cirurgião Geral</option>
-                    <option value={0}>Psiquiatra</option>
-                  </select>
-                </div>
-
-                <div className="input-groups-CadFun class-div-salario">
-                  <label htmlFor="" className="title-group-func-label">
-                    Salario
+                  <label htmlFor="salario" className="title-group-func-label">
+                    Salário
                   </label>
                   <CurrencyInput
                     id="salario"
@@ -303,49 +348,132 @@ export default function GerenciarCadastro() {
                     groupSeparator="."
                     decimalSeparator=","
                     value={salario}
-                    onValueChange={(value, name) => setSalario(value)}
+                    onValueChange={(value) => setSalario(value || "")}
+                    required
                   />
                 </div>
+                
                 <div className="input-groups-CadFun class-div-salario">
-                  <label
-                    htmlFor="Administrador"
-                    className="title-group-func-label"
-                  >
-                    Administrador
+                  <label htmlFor="cargaHoraria" className="title-group-func-label">
+                    Carga Horária (sem.)
+                  </label>
+                  <input
+                    type="number"
+                    id="cargaHoraria"
+                    className="inputs-Cad-Fun"
+                    value={cargaHoraria}
+                    onChange={(e) => setCargaHoraria(Number(e.target.value))}
+                    required
+                  />
+                </div>
+
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="Administrador" className="title-group-func-label">
+                    É Administrador?
                   </label>
                   <select
-                    name=""
-                    id=""
+                    id="Administrador"
                     value={admin}
-                    onChange={(e) => SetAdmin(e.target.value)}
-                    placeholderText="teste"
+                    onChange={(e) => setAdmin(Number(e.target.value))}
                     className="inputs-Cad-Fun gender-input"
+                    required
                   >
-                    <option value={1}>Administrador</option>
-                    <option value={0}>Não Administrador</option>
+                    <option value={0}>Não</option>
+                    <option value={1}>Sim</option>
                   </select>
                 </div>
+                
                 <div className="input-groups-CadFun class-div-salario">
-                  <label
-                    htmlFor="Administrador"
-                    className="title-group-func-label"
-                  >
-                    Conselho
+                  <label htmlFor="Conselho" className="title-group-func-label">
+                    É do Conselho?
                   </label>
                   <select
-                    name=""
-                    id=""
+                    id="Conselho"
                     value={conselho}
-                    onChange={(e) => SetConselho(e.target.value)}
-                    placeholderText="teste"
+                    onChange={(e) => setConselho(Number(e.target.value))}
                     className="inputs-Cad-Fun gender-input"
+                    required
                   >
-                    <option value={1}>Conselheiro</option>
-                    <option value={0}>Não Conselheiro</option>
+                    <option value={0}>Não</option>
+                    <option value={1}>Sim</option>
                   </select>
                 </div>
               </>
             )}
+
+            {typeCad === "medico" && (
+              <>
+                <h1 className="title-group-func title-group-last-section">
+                  Informações de Médico
+                </h1>
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="Especialidade" className="title-group-func-label">
+                    Especialidade
+                  </label>
+                  <select
+                    id="Especialidade"
+                    value={especialidade}
+                    onChange={(e) => setEspecialidade(e.target.value)}
+                    className="inputs-Cad-Fun gender-input"
+                    required
+                  >
+                    <option value="Cardiologia">Cardiologia</option>
+                    <option value="Dermatologia">Dermatologia</option>
+                    <option value="Ortopedia">Ortopedia</option>
+                    <option value="Psiquiatria">Psiquiatria</option>
+                    <option value="Clinico Geral">Clínico Geral</option>
+                  </select>
+                </div>
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="CRM" className="title-group-func-label">
+                    CRM (ex: 123456-SP)
+                  </label>
+                  <input
+                    type="text"
+                    id="CRM"
+                    className="inputs-Cad-Fun"
+                    value={crm}
+                    onChange={(e) => setCrm(e.target.value)}
+                    required
+                  />
+                </div>
+              </>
+            )}
+
+            {typeCad === "enfermeiro" && (
+              <>
+                <h1 className="title-group-func title-group-last-section">
+                  Informações de Enfermeiro
+                </h1>
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="Formacao" className="title-group-func-label">
+                    Formação
+                  </label>
+                  <input
+                    type="text"
+                    id="Formacao"
+                    className="inputs-Cad-Fun"
+                    value={formacao}
+                    onChange={(e) => setFormacao(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="input-groups-CadFun class-div-salario">
+                  <label htmlFor="COFEN" className="title-group-func-label">
+                    COFEN (ex: 123456-BA)
+                  </label>
+                  <input
+                    type="text"
+                    id="COFEN"
+                    className="inputs-Cad-Fun"
+                    value={cofen}
+                    onChange={(e) => setCofen(e.target.value)}
+                    required
+                  />
+                </div>
+              </>
+            )}
+
           </section>
         </div>
 
@@ -358,6 +486,7 @@ export default function GerenciarCadastro() {
               showImg="hidden"
               onClick={() => setTypeCad("paciente")}
               TypeBtn="button"
+              className={typeCad === 'paciente' ? 'active-type' : ''} 
             />
             <BtnCustomized
               size="medium"
@@ -366,6 +495,16 @@ export default function GerenciarCadastro() {
               showImg="hidden"
               onClick={() => setTypeCad("medico")}
               TypeBtn="button"
+              className={typeCad === 'medico' ? 'active-type' : ''} 
+            />
+            <BtnCustomized
+              size="medium"
+              TypeText="strong"
+              text="Enfermeiro"
+              showImg="hidden"
+              onClick={() => setTypeCad("enfermeiro")}
+              TypeBtn="button"
+              className={typeCad === 'enfermeiro' ? 'active-type' : ''} 
             />
           </div>
           <div className="action-group-right">
@@ -374,7 +513,6 @@ export default function GerenciarCadastro() {
               TypeText="strong"
               text="Cadastrar"
               showImg="hidden"
-              onClick={handleSubmit}
               TypeBtn="submit"
             />
           </div>
