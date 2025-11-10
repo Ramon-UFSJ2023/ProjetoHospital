@@ -12,7 +12,7 @@ app.use(express.json());
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '10.%7Mpa?6~V',
+  password: 'R@mon84149845', // Verifique se essa é a senha correta que você ajustou
   database: 'hospital',
   waitForConnections: true,
   connectionLimit: 10,
@@ -20,125 +20,130 @@ const pool = mysql.createPool({
 });
 
 app.post('/api/cadastro-paciente', async (req, res) => {
-  const {
-    cpf, email, senha, genero, data_nascimento,
-    primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep,
-    telefone
-  } = req.body;
+  const {
+    cpf, email, senha, genero, data_nascimento,
+    primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep,
+    telefone
+  } = req.body;
 
-  if (!cpf || !email || !senha || !primeiro_nome || !telefone) {
-    return res.status(400).json({ message: 'Dados obrigatórios faltando.' });
-  }
-  
-  const salt = await bcrypt.genSalt(10);
-  const senhaCriptografada = await bcrypt.hash(senha, salt);
+  if (!cpf || !email || !senha || !primeiro_nome || !telefone) {
+    return res.status(400).json({ message: 'Dados obrigatórios faltando.' });
+  }
+  
+  const salt = await bcrypt.genSalt(10);
+  const senhaCriptografada = await bcrypt.hash(senha, salt);
 
-  let connection;
-  try {
-    connection = await pool.getConnection();
-    await connection.beginTransaction();
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-    const queryUsuario = `
-      INSERT INTO hospital.usuario 
-      (cpf, email, senha, genero, data_nascimento, primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    await connection.execute(queryUsuario, [
-      cpf, email, senhaCriptografada, genero, data_nascimento,
-      primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep
-    ]);
+    // ----- CORREÇÃO AQUI -----
+    // A consulta foi re-indentada com espaços normais
+    const queryUsuario = `
+      INSERT INTO hospital.usuario 
+      (cpf, email, senha, genero, data_nascimento, primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    // ----- FIM DA CORREÇÃO -----
 
-    const queryPaciente = 'INSERT INTO hospital.paciente (cpf) VALUES (?)';
-    await connection.execute(queryPaciente, [cpf]);
+    await connection.execute(queryUsuario, [
+      cpf, email, senhaCriptografada, genero, data_nascimento,
+      primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep
+    ]);
 
-    const queryTelefone = 'INSERT INTO hospital.telefone (cpf, N_Telefone) VALUES (?, ?)';
-    await connection.execute(queryTelefone, [cpf, telefone]);
+    const queryPaciente = 'INSERT INTO hospital.paciente (cpf) VALUES (?)';
+    await connection.execute(queryPaciente, [cpf]);
 
-    await connection.commit();
-    res.status(201).json({ message: 'Paciente cadastrado com sucesso!' });
+    const queryTelefone = 'INSERT INTO hospital.telefone (cpf, N_Telefone) VALUES (?, ?)';
+    await connection.execute(queryTelefone, [cpf, telefone]);
 
-  } catch (error) {
-    if (connection) {
-      await connection.rollback();
-    }
+    await connection.commit();
+    res.status(201).json({ message: 'Paciente cadastrado com sucesso!' });
 
-    console.error('Erro no cadastro:', error);
+  } catch (error) {
+    if (connection) {
+      await connection.rollback();
+    }
 
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ message: 'Erro: CPF ou Email já está cadastrado.' });
-    }
-    
-    res.status(500).json({ message: 'Erro interno no servidor ao tentar cadastrar.' });
-  
-  } finally {
-    if (connection) {
-      connection.release();
-    }
-  }
+    console.error('Erro no cadastro:', error);
+
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Erro: CPF ou Email já está cadastrado.' });
+    }
+    
+    // O erro de sintaxe (ER_PARSE_ERROR) aparecia aqui
+    res.status(500).json({ message: 'Erro interno no servidor ao tentar cadastrar.' });
+  
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
 });
 
 app.post('/api/login', async (req, res) => {
-  const { cpf, password } = req.body;
+  const { cpf, password } = req.body;
 
-  if (!cpf || !password) {
-    return res.status(400).json({ message: 'CPF e Senha são obrigatórios.' });
-  }
+  if (!cpf || !password) {
+    return res.status(400).json({ message: 'CPF e Senha são obrigatórios.' });
+  }
 
-  const cpfLimpo = cpf.replace(/\D/g, '');
+  const cpfLimpo = cpf.replace(/\D/g, '');
 
-  let connection;
-  try {
-    connection = await pool.getConnection();
+  let connection;
+  try {
+    connection = await pool.getConnection();
 
-    const queryUsuario = 'SELECT * FROM hospital.usuario WHERE cpf = ?';
-    const [rows] = await connection.execute(queryUsuario, [cpfLimpo]);
+    const queryUsuario = 'SELECT * FROM hospital.usuario WHERE cpf = ?';
+    const [rows] = await connection.execute(queryUsuario, [cpfLimpo]);
 
-    if (rows.length === 0) {
-      return res.status(401).json({ message: 'CPF ou Senha inválidos.' });
-    }
+    if (rows.length === 0) {
+      return res.status(401).json({ message: 'CPF ou Senha inválidos.' });
+    }
 
-    const user = rows[0];
-    const senhaSalva = user.senha;
-    const isMatch = await bcrypt.compare(password, senhaSalva);
+    const user = rows[0];
+    const senhaSalva = user.senha;
+    const isMatch = await bcrypt.compare(password, senhaSalva);
 
-    if (!isMatch) {
-      return res.status(401).json({ message: 'CPF ou Senha inválidos.' });
-    }
+    if (!isMatch) {
+      return res.status(401).json({ message: 'CPF ou Senha inválidos.' });
+    }
 
-    let isPaciente = false;
-    let isFuncionario = false;
-    let isAdmin = false;
+    let isPaciente = false;
+    let isFuncionario = false;
+    let isAdmin = false;
 
-    const [pacienteRows] = await connection.execute('SELECT cpf FROM hospital.paciente WHERE cpf = ?', [cpfLimpo]);
-    if (pacienteRows.length > 0) {
-      isPaciente = true;
-    }
+    const [pacienteRows] = await connection.execute('SELECT cpf FROM hospital.paciente WHERE cpf = ?', [cpfLimpo]);
+    if (pacienteRows.length > 0) {
+      isPaciente = true;
+    }
 
-    const [funcRows] = await connection.execute('SELECT Eh_admin FROM hospital.funcionario WHERE cpf = ?', [cpfLimpo]);
-    if (funcRows.length > 0) {
-      isFuncionario = true;
-      isAdmin = funcRows[0].Eh_admin;
-    }
+    const [funcRows] = await connection.execute('SELECT Eh_admin FROM hospital.funcionario WHERE cpf = ?', [cpfLimpo]);
+    if (funcRows.length > 0) {
+      isFuncionario = true;
+      isAdmin = funcRows[0].Eh_admin;
+    }
 
-    res.status(200).json({
-      message: 'Login bem-sucedido!',
-      user: {
-        cpf: user.cpf,
-        primeiro_nome: user.primeiro_nome,
-        eh_paciente: isPaciente,
-        eh_funcionario: isFuncionario,
-        eh_admin: isAdmin
-      }
-    });
+    res.status(200).json({
+      message: 'Login bem-sucedido!',
+      user: {
+        cpf: user.cpf,
+        primeiro_nome: user.primeiro_nome,
+        eh_paciente: isPaciente,
+        eh_funcionario: isFuncionario,
+        eh_admin: isAdmin
+      }
+    });
 
-  } catch (error) {
-    console.error('Erro no login:', error);
-    res.status(500).json({ message: 'Erro interno no servidor durante o login.' });
-  } finally {
-    if (connection) {
-      connection.release();
-    }
-  }
+  } catch (error) {
+    console.error('Erro no login:', error);
+    res.status(500).json({ message: 'Erro interno no servidor durante o login.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
 });
 
 app.post('/api/admin/cadastro-geral', async (req, res) => {
@@ -596,5 +601,5 @@ app.delete('/api/admin/desalocar', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Servidor backend rodando em http://localhost:${port}`);
+  console.log(`Servidor backend rodando em http://localhost:${port}`);
 });
