@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import "./style/listaPaciente.css"; // Reutilizando o mesmo CSS
+import "./style/listaPaciente.css"; 
 import BtnCustomized from "../Buttons/ButtonCustomized";
 
 export default function GerenciarAlocacaoLeitos() {
   const [searchTerm, setSearchTerm] = useState("");
   const [resultados, setResultados] = useState([]);
 
-  // Função que busca as alocações na API
   const fetchAlocacoes = async (termoDeBusca) => {
     try {
       const response = await fetch(
@@ -25,12 +24,10 @@ export default function GerenciarAlocacaoLeitos() {
     }
   };
 
-  // Busca todas as alocações quando a página carrega
   useEffect(() => {
     fetchAlocacoes("");
   }, []);
 
-  // Função chamada no 'submit' da busca
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     fetchAlocacoes(searchTerm);
@@ -38,11 +35,10 @@ export default function GerenciarAlocacaoLeitos() {
 
   return (
     <div className="container-conteudo-admin">
-      {/* --- BARRA DE BUSCA --- */}
       <form className="busca-container" onSubmit={handleSearchSubmit}>
         <input
           type="text"
-          className="inputs-Cad-Fun" // Reutilizando seu estilo
+          className="inputs-Cad-Fun"
           placeholder="Buscar por Enfermeiro, CPF ou Nº do Leito..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -56,7 +52,6 @@ export default function GerenciarAlocacaoLeitos() {
         />
       </form>
 
-      {/* --- TABELA DE RESULTADOS --- */}
       <div className="resultados-container">
         <table className="tabela-resultados">
           <thead>
@@ -80,7 +75,6 @@ export default function GerenciarAlocacaoLeitos() {
                   <td>{alocacao.data_entrada_formatada}</td>
                   <td>{alocacao.data_saida_formatada || '---'}</td>
                   
-                  {/* Estilo condicional para o Status */}
                   <td style={{ color: alocacao.status_alocacao === 'ATIVO' ? 'green' : 'gray' }}>
                     <strong>{alocacao.status_alocacao}</strong>
                   </td>

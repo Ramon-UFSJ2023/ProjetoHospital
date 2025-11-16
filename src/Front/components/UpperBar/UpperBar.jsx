@@ -1,16 +1,22 @@
 import "./upperBar.css";
 import lupaIcon from "../../assets/pesquisa.png";
 import PropTypes from "prop-types";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function UpperBar({ items, onMenuItemClick = () => {} }) {
-  // const navigate = useNavigate();
+  const navigate = useNavigate(); 
 
   if (!items || items.length === 0) {
     return null;
   }
 
   const elementsClass = "elements-second-navbar";
+  
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/'); 
+  };
 
   const handleProfileChange = (event) => {
     const selectedValue = event.target.value;
@@ -20,7 +26,7 @@ export default function UpperBar({ items, onMenuItemClick = () => {} }) {
       // navigate('/configuracoes-conta');
     } else if (selectedValue === "sair") {
       console.log("Usuário selecionou: Sair");
-      // logout();
+      logout(); 
     }
   };
 

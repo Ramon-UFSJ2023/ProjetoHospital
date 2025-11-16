@@ -4,17 +4,15 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { ptBR } from 'date-fns/locale';
 
-// CORREÇÃO 1: Normalizar a data para meia-noite local
 const getInicioDaSemana = (date) => {
   const d = new Date(date);
   const diaDaSemana = d.getDay();
   const diff = d.getDate() - diaDaSemana + (diaDaSemana === 0 ? -6 : 1);
   d.setDate(diff);
-  d.setHours(0, 0, 0, 0); // Zera o horário para o início do dia local
+  d.setHours(0, 0, 0, 0);
   return d;
 };
 
-// CORREÇÃO 2: Nova função para formatar data local (YYYY-MM-DD)
 const formatarDataLocalSQL = (date) => {
   const ano = date.getFullYear();
   const mes = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -22,7 +20,6 @@ const formatarDataLocalSQL = (date) => {
   return `${ano}-${mes}-${dia}`;
 };
 
-// CORREÇÃO 3: Nova função para formatar data e hora local (YYYY-MM-DD HH:MM:SS)
 const formatarDataHoraLocalSQL = (date) => {
   const data = formatarDataLocalSQL(date);
   const hora = date.getHours().toString().padStart(2, '0');
@@ -30,8 +27,6 @@ const formatarDataHoraLocalSQL = (date) => {
   const segundo = date.getSeconds().toString().padStart(2, '0');
   return `${data} ${hora}:${minuto}:${segundo}`;
 };
-
-// (Função original 'formatarDataSQL' removida, pois foi substituída)
 
 export default function GerenciarAlocacoes() {
   const [medicos, setMedicos] = useState([]);
@@ -77,7 +72,6 @@ export default function GerenciarAlocacoes() {
 
     const params = new URLSearchParams({
       ...consultorioSelecionado, 
-      // CORREÇÃO 4: Usar a nova função de formatação local
       data_inicio_semana: `${formatarDataLocalSQL(inicioSemana)} 00:00:00`,
       data_fim_semana: `${formatarDataLocalSQL(fimSemana)} 23:59:59`,
     });
@@ -106,7 +100,6 @@ export default function GerenciarAlocacoes() {
     const dataHoraFim = new Date(dataHoraInicio);
     dataHoraFim.setHours(dataHoraFim.getHours() + 1); 
 
-    // CORREÇÃO 5: Usar a nova função que formata a hora local, sem converter para UTC
     const dataHoraInicioSQL = formatarDataHoraLocalSQL(dataHoraInicio);
     const dataHoraFimSQL = formatarDataHoraLocalSQL(dataHoraFim);
 
@@ -121,7 +114,6 @@ export default function GerenciarAlocacoes() {
           anexo: consultorioSelecionado.Anexo,
           andar: consultorioSelecionado.Andar,
           numero: consultorioSelecionado.Numero,
-          // CORREÇÃO 6: Usar a string da hora local calculada, e não a string do DB
           data_inicio: dataHoraInicioSQL,
         };
         
@@ -150,8 +142,8 @@ export default function GerenciarAlocacoes() {
           anexo: consultorioSelecionado.Anexo,
           andar: consultorioSelecionado.Andar,
           numero: consultorioSelecionado.Numero,
-          data_inicio: dataHoraInicioSQL, // Já está corrigido pela CORREÇÃO 5
-          data_fim: dataHoraFimSQL,       // Já está corrigido pela CORREÇÃO 5
+          data_inicio: dataHoraInicioSQL,
+          data_fim: dataHoraFimSQL,      
         };
 
         fetch("http://localhost:3001/api/admin/alocar", {
@@ -173,8 +165,6 @@ export default function GerenciarAlocacoes() {
   const getAlocacaoDoSlot = (diaIndex, horario) => {
     const dataSlot = getDataDoSlot(diaIndex, horario);
     
-    // Esta comparação .getTime() é robusta e deve funcionar corretamente
-    // desde que os dados do DB sejam lidos corretamente pelo 'new Date()'
     return alocacoes.find(a => {
       const dataInicioAlocacao = new Date(a.Data_Inicio);
       return dataInicioAlocacao.getTime() === dataSlot.getTime();
@@ -182,7 +172,6 @@ export default function GerenciarAlocacoes() {
   };
 
   return (
-    // O JSX permanece o mesmo
     <div className="container-conteudo-admin">
       <div className="alocacao-controles">
         <div className="input-groups-CadFun">

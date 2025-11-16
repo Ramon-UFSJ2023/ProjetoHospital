@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import "./style/ListaPaciente.css"; // Reutilizando o mesmo CSS
+import "./style/ListaPaciente.css";
 import BtnCustomized from "../Buttons/ButtonCustomized";
 
-// Helper para formatar R$
 const formatarMoeda = (valor) => {
   const valorNumerico = parseFloat(valor) || 0;
   return valorNumerico.toLocaleString('pt-BR', {
@@ -15,7 +14,6 @@ export default function GerenciarBuscaFuncionario() {
   const [searchTerm, setSearchTerm] = useState("");
   const [resultados, setResultados] = useState([]);
 
-  // Função que busca os funcionários na API
   const fetchFuncionarios = async (termoDeBusca) => {
     try {
       const response = await fetch(
@@ -34,12 +32,10 @@ export default function GerenciarBuscaFuncionario() {
     }
   };
 
-  // Busca todos os funcionários quando a página carrega
   useEffect(() => {
     fetchFuncionarios("");
   }, []);
 
-  // Função chamada no 'submit' da busca
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     fetchFuncionarios(searchTerm);
@@ -47,11 +43,10 @@ export default function GerenciarBuscaFuncionario() {
 
   return (
     <div className="container-conteudo-admin">
-      {/* --- BARRA DE BUSCA --- */}
       <form className="busca-container" onSubmit={handleSearchSubmit}>
         <input
           type="text"
-          className="inputs-Cad-Fun" // Reutilizando seu estilo
+          className="inputs-Cad-Fun" 
           placeholder="Buscar por Nome ou CPF do funcionário..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -65,7 +60,6 @@ export default function GerenciarBuscaFuncionario() {
         />
       </form>
 
-      {/* --- TABELA DE RESULTADOS --- */}
       <div className="resultados-container">
         <table className="tabela-resultados">
           <thead>
@@ -96,7 +90,6 @@ export default function GerenciarBuscaFuncionario() {
               ))
             ) : (
               <tr>
-                {/* <-- colSpan atualizado para 8 --> */}
                 <td colSpan="8" style={{ textAlign: "center" }}>
                   Nenhum funcionário encontrado.
                 </td>

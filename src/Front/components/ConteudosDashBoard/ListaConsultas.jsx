@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import "./style/listaPaciente.css"; // Reutilizando o mesmo CSS
+import "./style/listaPaciente.css"; 
 import BtnCustomized from "../Buttons/ButtonCustomized";
+import { useNavigate } from "react-router-dom";
 
-// Helper para formatar R$
 const formatarMoeda = (valor) => {
   const valorNumerico = parseFloat(valor) || 0;
   return valorNumerico.toLocaleString('pt-BR', {
@@ -14,19 +14,54 @@ const formatarMoeda = (valor) => {
 export default function GerenciarBuscaConsulta() {
   const [searchTerm, setSearchTerm] = useState("");
   const [resultados, setResultados] = useState([]);
+  
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const navigate = useNavigate();
 
-  // Função que busca as consultas na API
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('token');
+    
+    if (storedUser && storedToken) {
+      setUser(JSON.parse(storedUser));
+      setToken(storedToken);
+    } else {
+      alert("Sessão não encontrada. Redirecionando para o login.");
+      navigate('/');
+    }
+  }, [navigate]);
+
   const fetchConsultas = async (termoDeBusca) => {
+    if (!user || !token) return; 
+
+    const ehAdmin = user.eh_admin;
+    const baseUrl = ehAdmin 
+      ? `http://localhost:3001/api/admin/buscar-consultas`
+      : `http://localhost:3001/api/paciente/minhas-consultas`;
+      
+    const url = `${baseUrl}?busca=${termoDeBusca}`;
+
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/admin/buscar-consultas?busca=${termoDeBusca}`
-      );
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        }
+      });
+      
       const data = await response.json();
 
       if (response.ok) {
         setResultados(data);
       } else {
         alert(data.message || "Erro ao buscar consultas.");
+        if (response.status === 403 || response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/'); 
+        }
       }
     } catch (error) {
       console.error("Erro de rede:", error);
@@ -34,25 +69,30 @@ export default function GerenciarBuscaConsulta() {
     }
   };
 
-  // Busca todas as consultas quando a página carrega
   useEffect(() => {
-    fetchConsultas("");
-  }, []);
+    if (user && token) {
+      fetchConsultas(""); 
+    }
+  }, [user, token]); 
 
-  // Função chamada no 'submit' da busca
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     fetchConsultas(searchTerm);
   };
 
+  const placeholder = user?.eh_admin 
+    ? "Buscar por Paciente, Médico ou CPF..."
+    : "Buscar por Médico ou CPF do Médico...";
+
+  const ehAdminView = user?.eh_admin;
+
   return (
     <div className="container-conteudo-admin">
-      {/* --- BARRA DE BUSCA --- */}
       <form className="busca-container" onSubmit={handleSearchSubmit}>
         <input
           type="text"
-          className="inputs-Cad-Fun" // Reutilizando seu estilo
-          placeholder="Buscar por nome do Paciente, Médico ou CPF..."
+          className="inputs-Cad-Fun" 
+          placeholder={placeholder} 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -65,12 +105,11 @@ export default function GerenciarBuscaConsulta() {
         />
       </form>
 
-      {/* --- TABELA DE RESULTADOS --- */}
       <div className="resultados-container">
         <table className="tabela-resultados">
           <thead>
             <tr>
-              <th>Paciente</th>
+              {ehAdminView && <th>Paciente</th>} 
               <th>Médico</th>
               <th>Data e Hora</th>
               <th>Localização</th>
@@ -82,8 +121,10 @@ export default function GerenciarBuscaConsulta() {
           <tbody>
             {resultados.length > 0 ? (
               resultados.map((consulta) => (
-                <tr key={consulta.CPF_P + consulta.Numero}> {/* Chave única */}
-                  <td>{consulta.nome_paciente}</td>
+                <tr key={consulta.CPF_P + consulta.Numero}>
+                  
+                  {ehAdminView && <td>{consulta.nome_paciente}</td>}
+                  
                   <td>{consulta.nome_medico}</td>
                   <td>{consulta.data_consulta}</td>
                   <td>{consulta.localizacao}</td>
@@ -94,7 +135,7 @@ export default function GerenciarBuscaConsulta() {
               ))
             ) : (
               <tr>
-                <td colSpan="7" style={{ textAlign: "center" }}>
+                <td colSpan={ehAdminView ? 7 : 6} style={{ textAlign: "center" }}>
                   Nenhuma consulta encontrada.
                 </td>
               </tr>

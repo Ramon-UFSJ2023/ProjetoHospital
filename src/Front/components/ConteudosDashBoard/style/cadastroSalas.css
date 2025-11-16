@@ -24,8 +24,8 @@
 }
 .optionsCad {
   display: flex;
-  flex-direction: column; /* Coloca os itens um em cima do outro */
-  align-items: center; /* Centraliza horizontalmente */
+  flex-direction: column; 
+  align-items: center; 
   gap: 10px;
 }
 .config-img-cad-sala {

@@ -1,4 +1,4 @@
-/* --- Base (Copiado do seu GerenciasCadastro.css) --- */
+
 * {
   padding: 0;
   margin: 0;
@@ -9,7 +9,6 @@
   height: 82vh;
   padding: 1rem;
   padding-top: 0;
-  /* Adicionado para organizar a busca e a tabela */
   display: flex;
   flex-direction: column;
 }
@@ -24,22 +23,21 @@
   font-weight: bold;
   outline: none;
   width: 100%;
-  border: none; /* Adicionado para remover borda padrão */
+  border: none;
 }
 
-/* --- (NOVO) Estilos da Barra de Busca --- */
 .busca-container {
   display: flex;
-  gap: 15px; /* Espaço entre o input e o botão */
+  gap: 15px; 
   align-items: center;
-  padding: 1.5rem 0; /* Mais espaço vertical */
+  padding: 1.5rem 0; 
   width: 100%;
 }
 
 .busca-container .inputs-Cad-Fun {
-  flex-grow: 1; /* Faz o input ocupar o espaço disponível */
-  color: #333; /* Cor do texto digitado */
-  background-color: #fde5e5; /* Fundo mais claro para busca */
+  flex-grow: 1; 
+  color: #333; 
+  background-color: #fde5e5; 
 }
 
 .busca-container ::placeholder {
@@ -47,11 +45,9 @@
   font-weight: normal;
 }
 
-/* --- (NOVO) Estilos da Tabela de Resultados --- */
-
 .resultados-container {
-  flex-grow: 1; /* Ocupa o resto da altura */
-  overflow-y: auto; /* Adiciona barra de rolagem SE necessário */
+  flex-grow: 1; 
+  overflow-y: auto; 
   border-radius: 10px;
   border: 2px solid #fca2a2;
   max-height: 85%;
@@ -59,7 +55,7 @@
 
 .tabela-resultados {
   width: 100%;
-  border-collapse: collapse; /* Tira espaço entre células */
+  border-collapse: collapse; 
 }
 
 .tabela-resultados th,
@@ -70,10 +66,10 @@
 }
 
 .tabela-resultados th {
-  background-color: #fca2a2; /* Usa a cor principal */
+  background-color: #fca2a2; 
   color: white;
   font-size: 16px;
-  position: sticky; /* Cabeçalho fica fixo ao rolar */
+  position: sticky; 
   top: 0;
 }
 
@@ -82,7 +78,6 @@
   font-size: 14px;
 }
 
-/* Efeito 'zebra' (linhas alternadas) */
 .tabela-resultados tbody tr:nth-child(even) {
   background-color: #fff8f8;
 }

@@ -1,9 +1,0 @@
-          <div className="inputs-groups">
-            <label for="estado">Estados</label>
-            <select name="estado" id="estado" className="inputs" value={estadoSelecionado} onChange={e=> setEstadoSelecionado(e.target.value) }>
-              <option value="">Selecione um estado</option>
-              {estados.map(estado =>(
-                <option key={estado.id} value={estado.sigla} className="option-estado">{estado.sigla}</option>
-              ))}
-            </select>
-          </div>

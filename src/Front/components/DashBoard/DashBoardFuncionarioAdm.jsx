@@ -24,13 +24,13 @@ export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
       case itens[3].label:
         return <ListaPacientes />;
 
-      case itens[4].label: // Cadastrar Funcionarios ou pacientes
+      case itens[4].label: 
         return <ListaFuncionario />;
         
-      case itens[5].label: // Cadastrar Funcionarios ou pacientes
+      case itens[5].label: 
         return <GerenciasCadastroAdm />;
 
-      case itens[6].label: //
+      case itens[6].label: 
         return <CadastroSala />;
 
       default:

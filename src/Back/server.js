@@ -2,6 +2,7 @@ const express = require('express');
 const mysql = require('mysql2/promise'); 
 const cors = require('cors'); 
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = 3001; 
@@ -12,12 +13,32 @@ app.use(express.json());
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'R@mon84149845',
+  password: '10.%7Mpa?6~V',
   database: 'hospital',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
+
+const JWT_SECRET = 'seu_segredo_muito_forte_aqui';
+
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; 
+
+    if (token == null) {
+        return res.status(401).json({ message: 'Acesso negado. Token não fornecido.' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ message: 'Token inválido ou expirado.' });
+        }
+
+        req.user = user; 
+        next();
+    });
+}
 
 app.post('/api/cadastro-paciente', async (req, res) => {
   const {
@@ -90,8 +111,6 @@ app.post('/api/login', async (req, res) => {
   try {
     connection = await pool.getConnection();
 
-    // Query única com LEFT JOINs para buscar todos os papéis do usuário
-    // O 'f.cpf' é usado para os joins de medico e enfermeiro, conforme seu schema
     const queryLogin = `
       SELECT 
         u.cpf, 
@@ -130,19 +149,22 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'CPF ou Senha inválidos.' });
     }
 
-    // O '!!' (dupla negação) converte os valores (1, 0, NULL) 
-    // do MySQL para 'true' ou 'false' no JSON.
-    res.status(200).json({
-      message: 'Login bem-sucedido!',
-      user: {
+    const userData = {
         cpf: user.cpf,
         primeiro_nome: user.primeiro_nome,
         eh_paciente: !!user.eh_paciente,
         eh_funcionario: !!user.eh_funcionario,
-        eh_admin: !!user.Eh_admin, // 'Eh_admin' vem do 'f.Eh_admin'
+        eh_admin: !!user.Eh_admin, 
         eh_medico: !!user.eh_medico,
         eh_enfermeiro: !!user.eh_enfermeiro
-      }
+    };
+
+    const token = jwt.sign(userData, JWT_SECRET, { expiresIn: '1h' }); 
+
+    res.status(200).json({
+      message: 'Login bem-sucedido!',
+      user: userData,
+      token: token 
     });
 
   } catch (error) {
@@ -195,7 +217,7 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
       const queryPaciente = 'INSERT INTO hospital.paciente (cpf, Observacoes) VALUES (?, NULL)';
       await connection.execute(queryPaciente, [cpf]);
     
-    } else if (typeCad === 'medico' || typeCad === 'enfermeiro' || typeCad === 'funcionario') { // Adicionado 'funcionario'
+    } else if (typeCad === 'medico' || typeCad === 'enfermeiro' || typeCad === 'funcionario') { 
       
       const queryFuncionario = `
         INSERT INTO hospital.funcionario (cpf, Salario, Eh_admin, Eh_Conselho, Carga_Horaria)
@@ -207,7 +229,7 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
 
       if (typeCad === 'medico') {
         if (!crm || !especialidade) {
-          await connection.rollback(); // Desfaz a transação
+          await connection.rollback(); 
           return res.status(400).json({ message: 'CRM e Especialidade são obrigatórios para Médicos.' });
         }
         const queryMedico = 'INSERT INTO hospital.medico (cpf, CRM, Especialidade) VALUES (?, ?, ?)';
@@ -215,16 +237,15 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
       
       } else if (typeCad === 'enfermeiro') {
         if (!cofen || !formacao) {
-          await connection.rollback(); // Desfaz a transação
+          await connection.rollback();  
           return res.status(400).json({ message: 'COFEN e Formação são obrigatórios para Enfermeiros.' });
         }
         const queryEnfermeiro = 'INSERT INTO hospital.enfermeiro (cpf, COFEN, Formacao) VALUES (?, ?, ?)';
         await connection.execute(queryEnfermeiro, [cpf, cofen, formacao]);
       }
-      // Se for 'funcionario', não faz mais nada (já inseriu em 'funcionario')
     
     } else {
-      await connection.rollback(); // Desfaz a transação
+      await connection.rollback(); 
       return res.status(400).json({ message: 'Tipo de cadastro inválido.' });
     }
 
@@ -251,17 +272,15 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
 });
 
 app.get('/api/admin/buscar-pacientes', async (req, res) => {
-  const { busca } = req.query; // Pega o termo de busca (ex: ?busca=Davy)
+  const { busca } = req.query; 
   
-  // Se 'busca' estiver vazio, searchTerm será '%%', que busca todos.
   const searchTerm = busca ? `%${busca}%` : '%%'; 
 
   let connection;
   try {
     connection = await pool.getConnection();
     
-    // Query que busca em Pacientes, juntando com Usuário para pegar os nomes/emails
-    // Busca por CPF OU por Nome Completo
+
     const query = `
       SELECT 
         u.cpf, 
@@ -282,7 +301,7 @@ app.get('/api/admin/buscar-pacientes', async (req, res) => {
     
     const [rows] = await connection.execute(query, [searchTerm, searchTerm]);
     
-    res.status(200).json(rows); // Retorna a lista de pacientes
+    res.status(200).json(rows); 
 
   } catch (error) {
     console.error('Erro ao buscar pacientes:', error);
@@ -302,7 +321,6 @@ app.get('/api/admin/buscar-funcionarios', async (req, res) => {
   try {
     connection = await pool.getConnection();
     
-    // Query que busca em Funcionários e junta com Usuário, Médico e Enfermeiro
     const query = `
       SELECT 
         u.cpf, 
@@ -333,7 +351,7 @@ app.get('/api/admin/buscar-funcionarios', async (req, res) => {
     
     const [rows] = await connection.execute(query, [searchTerm, searchTerm]);
     
-    res.status(200).json(rows); // Retorna a lista de funcionários
+    res.status(200).json(rows);  
 
   } catch (error) {
     console.error('Erro ao buscar funcionários:', error);
@@ -345,7 +363,11 @@ app.get('/api/admin/buscar-funcionarios', async (req, res) => {
   }
 });
 
-app.get('/api/admin/buscar-consultas', async (req, res) => {
+app.get('/api/admin/buscar-consultas', authenticateToken, async (req, res) => {
+  if (!req.user.eh_admin) {
+    return res.status(403).json({ message: 'Acesso negado. Requer privilégios de administrador.' });
+  }
+
   const { busca } = req.query; 
   const searchTerm = busca ? `%${busca}%` : '%%'; 
 
@@ -353,7 +375,6 @@ app.get('/api/admin/buscar-consultas', async (req, res) => {
   try {
     connection = await pool.getConnection();
     
-    // Query que junta consulta com os nomes de usuário do paciente (up) e do médico (um)
     const query = `
       SELECT 
         c.CPF_P,
@@ -378,16 +399,14 @@ app.get('/api/admin/buscar-consultas', async (req, res) => {
         c.CPF_P LIKE ? OR
         c.CPF_M LIKE ?
       ORDER BY 
-        c.Data_Inicio DESC; -- Mostra as consultas mais recentes primeiro
+        c.Data_Inicio DESC;
     `;
     
-    // Precisamos passar o searchTerm 4 vezes, uma para cada '?' na query
     const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm, searchTerm]);
-    
-    res.status(200).json(rows); // Retorna a lista de consultas
+    res.status(200).json(rows);
 
   } catch (error) {
-    console.error('Erro ao buscar consultas:', error);
+    console.error('Erro ao buscar consultas (admin):', error);
     res.status(500).json({ message: 'Erro interno no servidor ao buscar consultas.' });
   } finally {
     if (connection) {
@@ -396,7 +415,67 @@ app.get('/api/admin/buscar-consultas', async (req, res) => {
   }
 });
 
-app.get('/api/admin/buscar-cirurgias', async (req, res) => {
+app.get('/api/paciente/minhas-consultas', authenticateToken, async (req, res) => {
+    const { busca } = req.query; 
+    const searchTerm = busca ? `%${busca}%` : '%%'; 
+    
+    const cpfPaciente = req.user.cpf; 
+
+    if (!cpfPaciente) {
+        return res.status(400).json({ message: 'CPF do usuário não encontrado no token.' });
+    }
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        const query = `
+          SELECT 
+            c.CPF_P,
+            c.Numero,
+            CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
+            CONCAT(um.primeiro_nome, ' ', um.sobrenome) AS nome_medico,
+            DATE_FORMAT(c.Data_Inicio, '%d/%m/%Y %H:%i') AS data_consulta,
+            CONCAT(c.Bloco_Consultorio, ' / Andar ', c.Andar_Consultorio, ' / Sala ', c.N_Consultorio) AS localizacao,
+            c.Valor,
+            c.Esta_Paga,
+            c.Internacao
+          FROM 
+            hospital.consulta c
+          JOIN 
+            hospital.usuario up ON c.CPF_P = up.cpf
+          JOIN 
+            hospital.usuario um ON c.CPF_M = um.cpf
+          WHERE
+            c.CPF_P = ? AND -- MUDANÇA PRINCIPAL: Filtra pelo CPF do token
+            ( 
+              -- A busca (searchTerm) agora filtra apenas por médico
+              CONCAT(um.primeiro_nome, ' ', um.sobrenome) LIKE ? OR
+              c.CPF_M LIKE ?
+            )
+          ORDER BY 
+            c.Data_Inicio DESC;
+        `;
+        
+        const [rows] = await connection.execute(query, [cpfPaciente, searchTerm, searchTerm]);
+        
+        res.status(200).json(rows); 
+
+    } catch (error) {
+        console.error('Erro ao buscar (minhas consultas):', error);
+        res.status(500).json({ message: 'Erro interno no servidor ao buscar suas consultas.' });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
+app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
+  if (!req.user.eh_admin) {
+    return res.status(403).json({ message: 'Acesso negado. Requer privilégios de administrador.' });
+  }
+
   const { busca } = req.query; 
   const searchTerm = busca ? `%${busca}%` : '%%'; 
 
@@ -404,16 +483,12 @@ app.get('/api/admin/buscar-cirurgias', async (req, res) => {
   try {
     connection = await pool.getConnection();
     
-    // Query complexa que junta cirurgia, paciente (up), e médicos (um)
     const query = `
       SELECT 
         c.CPF_P,
         c.Numero,
         CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
-        
-        -- Concatena todos os médicos que realizaram a cirurgia em uma string
         GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
-        
         DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
         DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
         CONCAT(c.Bloco_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
@@ -422,39 +497,91 @@ app.get('/api/admin/buscar-cirurgias', async (req, res) => {
       FROM 
         hospital.cirurgia c
       JOIN 
-        hospital.usuario up ON c.CPF_P = up.cpf -- 'up' = Usuário Paciente
+        hospital.usuario up ON c.CPF_P = up.cpf
       LEFT JOIN 
         hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
       LEFT JOIN 
-        hospital.usuario um ON r.CPF_M = um.cpf -- 'um' = Usuário Médico
-      
-      -- Agrupamos por cirurgia para o GROUP_CONCAT funcionar
+        hospital.usuario um ON r.CPF_M = um.cpf
       GROUP BY
         c.CPF_P, c.Numero
-      
-      -- HAVING filtra *depois* do agrupamento, permitindo buscar no nome do médico
       HAVING 
         nome_paciente LIKE ? OR
         c.CPF_P LIKE ? OR
         medicos LIKE ?
-        
       ORDER BY 
-        c.Data_Entrada DESC; -- Cirurgias mais recentes primeiro
+        c.Data_Entrada DESC;
     `;
     
-    // Passa o searchTerm 3 vezes (para os 3 '?' do HAVING)
     const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
-    
-    res.status(200).json(rows); // Retorna a lista de cirurgias
+    res.status(200).json(rows);
 
   } catch (error) {
-    console.error('Erro ao buscar cirurgias:', error);
+    console.error('Erro ao buscar cirurgias (admin):', error);
     res.status(500).json({ message: 'Erro interno no servidor ao buscar cirurgias.' });
   } finally {
     if (connection) {
       connection.release();
     }
   }
+});
+
+app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) => {
+    const { busca } = req.query; 
+    const searchTerm = busca ? `%${busca}%` : '%%'; 
+    
+    const cpfPaciente = req.user.cpf; 
+
+    if (!cpfPaciente) {
+        return res.status(400).json({ message: 'CPF do usuário não encontrado no token.' });
+    }
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        const query = `
+          SELECT 
+            c.CPF_P,
+            c.Numero,
+            CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
+            GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
+            DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
+            DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
+            CONCAT(c.Bloco_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
+            c.Valor,
+            c.Esta_Paga
+          FROM 
+            hospital.cirurgia c
+          JOIN 
+            hospital.usuario up ON c.CPF_P = up.cpf
+          LEFT JOIN 
+            hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
+          LEFT JOIN 
+            hospital.usuario um ON r.CPF_M = um.cpf
+          WHERE
+            c.CPF_P = ? -- MUDANÇA PRINCIPAL: Filtra pelo CPF do token
+          GROUP BY
+            c.CPF_P, c.Numero
+          HAVING 
+            -- A busca (searchTerm) agora filtra apenas por médico
+            -- (medicos LIKE ?) OU (Se a busca estiver vazia E medicos for nulo)
+            (medicos LIKE ?) OR (medicos IS NULL AND ? = '%%')
+          ORDER BY 
+            c.Data_Entrada DESC;
+        `;
+        
+        const [rows] = await connection.execute(query, [cpfPaciente, searchTerm, searchTerm]);
+        
+        res.status(200).json(rows); 
+
+    } catch (error) {
+        console.error('Erro ao buscar (minhas cirurgias):', error);
+        res.status(500).json({ message: 'Erro interno no servidor ao buscar suas cirurgias.' });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
 });
 
 app.get('/api/admin/medicos', async (req, res) => {
@@ -514,7 +641,7 @@ app.get('/api/admin/alocacoes', async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
-    // Busca todas as alocações para aquele consultório, naquela semana, e traz o nome do médico
+
     const query = `
       SELECT 
         t.CPF_M,
@@ -617,8 +744,6 @@ app.get('/api/admin/buscar-alocacoes-leitos', async (req, res) => {
   try {
     connection = await pool.getConnection();
     
-    // Query que junta 'cuida_leito' com 'usuario' (para nome do enfermeiro)
-    // e 'leito' (para status de ocupação)
     const query = `
       SELECT 
         cl.CPF_E,
@@ -662,7 +787,6 @@ app.get('/api/admin/buscar-alocacoes-leitos', async (req, res) => {
         cl.Data_Entrada DESC;      -- Depois os mais recentes
     `;
     
-    // 3 parâmetros de busca (para os 3 '?' da query)
     const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
     
     res.status(200).json(rows); 

@@ -20,20 +20,34 @@ export default function PageLogin({ title, showLinkCadastro }) {
     navigate("/page-cad-paciente");
   };
 
-  // --- NOVAS ROTAS DE REDIRECIONAMENTO ---
-  const goPageDashBoardFunAdm = () => {
-    navigate("/page-func-adm");
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
-  const goPageDashBoardMedico = () => {
-    navigate("/page-medico"); // Rota para médicos
+
+  const handleRoleRedirect = (user) => {
+    const dashboards = [];
+    if (user.eh_admin) {
+      dashboards.push({ role: 'admin', path: '/page-func-adm' });
+    }
+    if (user.eh_medico) {
+      dashboards.push({ role: 'medico', path: '/page-medico' });
+    }
+    if (user.eh_enfermeiro) {
+      dashboards.push({ role: 'enfermeiro', path: '/page-enfermeiro' });
+    }
+    
+    if (dashboards.length > 1) {
+      navigate('/escolher-perfil');
+    } else if (dashboards.length === 1) {
+      navigate(dashboards[0].path);
+    } else {
+      alert("Acesso negado. Seu perfil de funcionário não possui um dashboard associado.");
+      logout();
+      navigate('/login-funcionario'); 
+    }
   };
-  const goPageDashBoardEnfermeiro = () => {
-    navigate("/page-enfermeiro"); // Rota para enfermeiros
-  };
-  const goPageDashBoardFuncionarioComum = () => {
-    navigate("/page-funcionario-comum"); // Rota para funcionários comuns (não-admin, não-médico, não-enfermeiro)
-  };
-  // ----------------------------------------
+
 
   const TrySubmit = async (event) => {
     event.preventDefault();
@@ -59,34 +73,21 @@ export default function PageLogin({ title, showLinkCadastro }) {
       if (!response.ok) {
         alert(data.message);
       } else {
-        // Lógica de Paciente (sem mudanças)
+        localStorage.setItem('token', data.token); 
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        alert(data.message);
+
         if (userType === 'paciente' && data.user.eh_paciente) {
-          alert(data.message);
           goPageInicialPacient();
         
-        // --- LÓGICA DE FUNCIONÁRIO ATUALIZADA ---
         } else if (userType === 'funcionario' && data.user.eh_funcionario) {
           
-          alert(data.message); // Exibe a mensagem de sucesso "Login bem-sucedido"
-          
-          // Verifica os papéis em ordem de prioridade
-          if (data.user.eh_admin) {
-            goPageDashBoardFunAdm();
-          
-          } else if (data.user.eh_medico) {
-            goPageDashBoardMedico();
-          
-          } else if (data.user.eh_enfermeiro) {
-            goPageDashBoardEnfermeiro();
-          
-          } else {
-            // Se não for admin, nem médico, nem enfermeiro, é "comum"
-            goPageDashBoardFuncionarioComum();
-          }
+          handleRoleRedirect(data.user);
         
-        // Tentativa de login no portal errado
         } else {
           alert("Acesso negado. Você não tem permissão para esta área.");
+          logout();
         }
       }
 

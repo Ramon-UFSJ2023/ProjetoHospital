@@ -73,7 +73,7 @@ input::-webkit-inner-spin-button {
 }
 
 .bottom {
-  background: #e5e5e5; /* cinza claro */
+  background: #e5e5e5; 
   text-align: center;
   padding: 10px;
   font-weight: bold;
