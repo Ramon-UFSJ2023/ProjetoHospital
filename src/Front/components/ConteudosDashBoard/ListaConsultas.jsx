@@ -11,7 +11,7 @@ const formatarMoeda = (valor) => {
   });
 };
 
-export default function GerenciarBuscaConsulta() {
+export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [resultados, setResultados] = useState([]);
   
@@ -80,6 +80,10 @@ export default function GerenciarBuscaConsulta() {
     fetchConsultas(searchTerm);
   };
 
+  const handleMarcarConsulta = () => {
+    onNavigateClick("Marcar Consulta"); 
+  };
+
   const placeholder = user?.eh_admin 
     ? "Buscar por Paciente, Médico ou CPF..."
     : "Buscar por Médico ou CPF do Médico...";
@@ -103,6 +107,17 @@ export default function GerenciarBuscaConsulta() {
           showImg="hidden"
           TypeBtn="submit"
         />
+        
+        {user && user.eh_paciente && (
+          <BtnCustomized
+            size="medium"
+            TypeText="strong"
+            text="Marcar Consulta"
+            showImg="hidden"
+            TypeBtn="button" 
+            onClick={handleMarcarConsulta}
+          />
+        )}
       </form>
 
       <div className="resultados-container">

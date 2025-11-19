@@ -801,6 +801,102 @@ app.get('/api/admin/buscar-alocacoes-leitos', async (req, res) => {
   }
 });
 
+app.post('/api/paciente/marcar-consulta', authenticateToken, async (req, res) => {
+  const { cpf_m, data_inicio } = req.body;
+  const cpf_p = req.user.cpf; 
+
+  if (!cpf_m || !data_inicio) {
+    return res.status(400).json({ message: 'Médico e Data/Hora são obrigatórios.' });
+  }
+
+  if (!req.user.eh_paciente) {
+    return res.status(403).json({ message: 'Acesso negado. Apenas pacientes podem marcar consultas.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    const querySlot = `
+      SELECT 
+        *, 
+        DATE_FORMAT(Data_Fim, '%Y-%m-%d %H:%i:%s') as data_fim_sql 
+      FROM hospital.trabalha_em 
+      WHERE 
+        CPF_M = ? AND Data_Inicio = ?
+    `;
+    const [slots] = await connection.execute(querySlot, [cpf_m, data_inicio]);
+
+    if (slots.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Horário indisponível. O médico não está alocado neste horário.' });
+    }
+    
+    const slotInfo = slots[0];
+
+    const queryConflito = `
+      SELECT 1 FROM hospital.consulta 
+      WHERE 
+        (CPF_M = ? AND Data_Inicio = ?) OR 
+        (CPF_P = ? AND Data_Inicio = ?)
+      LIMIT 1
+    `;
+    const [conflitos] = await connection.execute(queryConflito, [cpf_m, data_inicio, cpf_p, data_inicio]);
+
+    if (conflitos.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({ message: 'Conflito de horário. Este médico ou você já possui uma consulta neste horário.' });
+    }
+
+    const queryProximoNumero = `
+      SELECT IFNULL(MAX(Numero), 0) + 1 AS proximoNumero 
+      FROM hospital.consulta 
+      WHERE CPF_P = ?
+    `;
+    const [rowsNumero] = await connection.execute(queryProximoNumero, [cpf_p]);
+    const proximoNumero = rowsNumero[0].proximoNumero;
+    
+    const valorConsulta = 200.00;
+    const dataFimSQL = slotInfo.data_fim_sql; 
+
+    const queryInsert = `
+      INSERT INTO hospital.consulta 
+      (CPF_P, Numero, N_Consultorio, Bloco_Consultorio, Anexo_Consultorio, Andar_Consultorio, 
+       Data_Inicio, Horario_Fim, Valor, Esta_Paga, Internacao, CPF_M)
+      VALUES 
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+    `;
+    
+    await connection.execute(queryInsert, [
+      cpf_p, 
+      proximoNumero, 
+      slotInfo.N_Consultorio, 
+      slotInfo.Bloco_Consultorio, 
+      slotInfo.Anexo_Consultorio, 
+      slotInfo.Andar_Consultorio, 
+      data_inicio, 
+      dataFimSQL, 
+      valorConsulta, 
+      cpf_m
+    ]);
+
+    await connection.commit();
+    res.status(201).json({ message: 'Consulta marcada com sucesso!' });
+
+  } catch (error) {
+    if (connection) {
+      await connection.rollback();
+    }
+    console.error('Erro ao marcar consulta:', error);
+    res.status(500).json({ message: 'Erro interno no servidor ao tentar marcar consulta.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
 app.listen(port, () => {
   console.log(`Servidor backend rodando em http://localhost:${port}`);
 });
