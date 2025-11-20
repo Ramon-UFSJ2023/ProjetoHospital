@@ -2,9 +2,27 @@ import "./upperBar.css";
 import lupaIcon from "../../assets/pesquisa.png";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react"; 
 
 export default function UpperBar({ items, onMenuItemClick = () => {} }) {
   const navigate = useNavigate(); 
+  const [userName, setUserName] = useState("Conta"); 
+
+  useEffect(() => {
+    const userString = localStorage.getItem('user');
+    console.log("AAAAAAAAAAAAAAAAAAAAAA")
+    console.log(userString)
+    if (userString) {
+      try {
+        const user = JSON.parse(userString);
+        if (user.primeiro_nome) {
+            setUserName(user.primeiro_nome);
+        }
+      } catch (e) {
+        console.error("Erro ao ler usuário do localStorage", e);
+      }
+    }
+  }, []);
 
   if (!items || items.length === 0) {
     return null;
@@ -23,7 +41,6 @@ export default function UpperBar({ items, onMenuItemClick = () => {} }) {
 
     if (selectedValue === "config") {
       console.log("Usuário selecionou: Configurações de conta");
-      // navigate('/configuracoes-conta');
     } else if (selectedValue === "sair") {
       console.log("Usuário selecionou: Sair");
       logout(); 
@@ -48,10 +65,11 @@ export default function UpperBar({ items, onMenuItemClick = () => {} }) {
         <select
           className="profile-select"
           onChange={handleProfileChange}
-          defaultValue="conta"
+          value="conta" // Força o valor 'conta' para mostrar o nome como label principal
         >
-          <option value="conta" disabled>
-            Conta
+          <option value="conta" disabled hidden> 
+            {/* Mostra o nome do usuário aqui */}
+            {userName}
           </option>
           <option value="config">Configurações de conta</option>
           <option value="sair">Sair</option>

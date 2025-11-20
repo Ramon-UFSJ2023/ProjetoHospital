@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "./style/GerenciasCadastro.css"; 
+import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { ptBR } from 'date-fns/locale';
 import BtnCustomized from "../Buttons/ButtonCustomized";
 import { useNavigate } from "react-router-dom";
+// import { ptBR } from 'date-fns/locale';
 
 registerLocale('ptBR', ptBR);
 

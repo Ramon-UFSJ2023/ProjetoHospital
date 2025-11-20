@@ -20,7 +20,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-const JWT_SECRET = 'seu_segredo_muito_forte_aqui';
+const JWT_SECRET = 'seu_segredo_muito_forte_aqui'; //tem que mudar isso
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -382,18 +382,18 @@ app.get('/api/admin/buscar-consultas', authenticateToken, async (req, res) => {
         CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
         CONCAT(um.primeiro_nome, ' ', um.sobrenome) AS nome_medico,
         DATE_FORMAT(c.Data_Inicio, '%d/%m/%Y %H:%i') AS data_consulta,
-        CONCAT(c.Bloco_Consultorio, ' / Andar ', c.Andar_Consultorio, ' / Sala ', c.N_Consultorio) AS localizacao,
+        DATE_FORMAT(c.Horario_Fim, '%H:%i') AS horario_fim_formatado, -- ADICIONADO
+        CONCAT('Bloco ',c.Bloco_Consultorio, ' / Anexo ', c.Anexo_Consultorio, ' / Andar ', c.Andar_Consultorio, ' / Sala ', c.N_Consultorio) AS localizacao,
         c.Valor,
         c.Esta_Paga,
         c.Internacao
       FROM 
         hospital.consulta c
       JOIN 
-        hospital.usuario up ON c.CPF_P = up.cpf -- 'up' = Usuário Paciente
+        hospital.usuario up ON c.CPF_P = up.cpf 
       JOIN 
-        hospital.usuario um ON c.CPF_M = um.cpf -- 'um' = Usuário Médico
+        hospital.usuario um ON c.CPF_M = um.cpf 
       WHERE
-        -- Busca pelo nome do paciente, nome do médico, ou CPF de um deles
         CONCAT(up.primeiro_nome, ' ', up.sobrenome) LIKE ? OR
         CONCAT(um.primeiro_nome, ' ', um.sobrenome) LIKE ? OR
         c.CPF_P LIKE ? OR
@@ -429,6 +429,7 @@ app.get('/api/paciente/minhas-consultas', authenticateToken, async (req, res) =>
     try {
         connection = await pool.getConnection();
         
+        // Query limpa e corrigida
         const query = `
           SELECT 
             c.CPF_P,
@@ -436,7 +437,8 @@ app.get('/api/paciente/minhas-consultas', authenticateToken, async (req, res) =>
             CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
             CONCAT(um.primeiro_nome, ' ', um.sobrenome) AS nome_medico,
             DATE_FORMAT(c.Data_Inicio, '%d/%m/%Y %H:%i') AS data_consulta,
-            CONCAT(c.Bloco_Consultorio, ' / Andar ', c.Andar_Consultorio, ' / Sala ', c.N_Consultorio) AS localizacao,
+            DATE_FORMAT(c.Horario_Fim, '%H:%i') AS horario_fim_formatado,
+            CONCAT('Bloco ',c.Bloco_Consultorio, ' / Anexo ', c.Anexo_Consultorio, ' / Andar ', c.Andar_Consultorio, ' / Sala ', c.N_Consultorio) AS localizacao,
             c.Valor,
             c.Esta_Paga,
             c.Internacao
@@ -447,9 +449,8 @@ app.get('/api/paciente/minhas-consultas', authenticateToken, async (req, res) =>
           JOIN 
             hospital.usuario um ON c.CPF_M = um.cpf
           WHERE
-            c.CPF_P = ? AND -- MUDANÇA PRINCIPAL: Filtra pelo CPF do token
+            c.CPF_P = ? AND 
             ( 
-              -- A busca (searchTerm) agora filtra apenas por médico
               CONCAT(um.primeiro_nome, ' ', um.sobrenome) LIKE ? OR
               c.CPF_M LIKE ?
             )
@@ -463,12 +464,95 @@ app.get('/api/paciente/minhas-consultas', authenticateToken, async (req, res) =>
 
     } catch (error) {
         console.error('Erro ao buscar (minhas consultas):', error);
+        // Dica: Olhe no terminal onde o servidor (backend) está rodando para ver o erro detalhado
         res.status(500).json({ message: 'Erro interno no servidor ao buscar suas consultas.' });
     } finally {
         if (connection) {
             connection.release();
         }
     }
+});
+
+app.get('/api/medico/minhas-consultas', authenticateToken, async (req, res) => {
+    const { busca } = req.query; 
+    const searchTerm = busca ? `%${busca}%` : '%%'; 
+    const cpfMedico = req.user.cpf; 
+
+    if (!req.user.eh_medico) {
+      return res.status(403).json({ message: 'Acesso negado. Apenas médicos podem acessar.' });
+    }
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        const query = `
+          SELECT 
+            c.CPF_P, c.Numero,
+            CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
+            CONCAT(um.primeiro_nome, ' ', um.sobrenome) AS nome_medico,
+            DATE_FORMAT(c.Data_Inicio, '%d/%m/%Y %H:%i') AS data_consulta,
+            DATE_FORMAT(c.Horario_Fim, '%H:%i') AS horario_fim_formatado,
+            CONCAT('Bloco ', c.Bloco_Consultorio, ' / Anexo ', c.Anexo_Consultorio, ' / Andar ', c.Andar_Consultorio, ' / Sala ', c.N_Consultorio) AS localizacao,
+            c.Valor, c.Esta_Paga, c.Internacao
+          FROM hospital.consulta c
+          JOIN hospital.usuario up ON c.CPF_P = up.cpf
+          JOIN hospital.usuario um ON c.CPF_M = um.cpf
+          WHERE
+            c.CPF_M = ? AND 
+            (CONCAT(up.primeiro_nome, ' ', up.sobrenome) LIKE ? OR c.CPF_P LIKE ?)
+          ORDER BY c.Data_Inicio DESC;
+        `;
+        
+        const [rows] = await connection.execute(query, [cpfMedico, searchTerm, searchTerm]);
+        res.status(200).json(rows); 
+    } catch (error) {
+        console.error('Erro ao buscar (consultas medico):', error);
+        res.status(500).json({ message: 'Erro interno no servidor.' });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+app.delete('/api/consulta/deletar', authenticateToken, async (req, res) => {
+  const { cpf_p, numero } = req.body;
+
+  if (!cpf_p || !numero) {
+    return res.status(400).json({ message: 'Dados inválidos para exclusão.' });
+  }
+
+  // Regra de Segurança: 
+  // Se NÃO for admin E o CPF da consulta for diferente do CPF do token, bloqueia.
+  if (!req.user.eh_admin && req.user.cpf !== cpf_p) {
+    return res.status(403).json({ message: 'Acesso negado. Você não pode excluir esta consulta.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const query = `DELETE FROM hospital.consulta WHERE CPF_P = ? AND Numero = ?`;
+    
+    const [result] = await connection.execute(query, [cpf_p, numero]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Consulta excluída com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Consulta não encontrada para exclusão.' });
+    }
+
+  } catch (error) {
+    console.error('Erro ao excluir consulta:', error);
+    // Verifica se é erro de chave estrangeira (ex: se a consulta já tem exames vinculados que impedem delete)
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({ message: 'Não é possível excluir: existem registros dependentes desta consulta.' });
+    }
+    res.status(500).json({ message: 'Erro interno ao tentar excluir a consulta.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
 });
 
 app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
@@ -491,7 +575,16 @@ app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
         GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
         DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
         DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
-        CONCAT(c.Bloco_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
+        CONCAT('Bloco ', c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Andar ', c.Andar_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
+        
+        -- Novos campos para o modal
+        c.N_Tuss,
+        CASE 
+            WHEN c.Bloco_Leito IS NOT NULL THEN 
+                CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
+            ELSE NULL 
+        END AS localizacao_leito,
+
         c.Valor,
         c.Esta_Paga
       FROM 
@@ -547,7 +640,16 @@ app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) =>
             GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
             DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
             DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
-            CONCAT(c.Bloco_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
+            CONCAT(c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
+            
+            -- Novos campos
+            c.N_Tuss,
+            CASE 
+                WHEN c.Bloco_Leito IS NOT NULL THEN 
+                    CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
+                ELSE NULL 
+            END AS localizacao_leito,
+
             c.Valor,
             c.Esta_Paga
           FROM 
@@ -559,16 +661,14 @@ app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) =>
           LEFT JOIN 
             hospital.usuario um ON r.CPF_M = um.cpf
           WHERE
-            c.CPF_P = ? -- MUDANÇA PRINCIPAL: Filtra pelo CPF do token
+            c.CPF_P = ? 
           GROUP BY
             c.CPF_P, c.Numero
           HAVING 
-            -- A busca (searchTerm) agora filtra apenas por médico
-            -- (medicos LIKE ?) OU (Se a busca estiver vazia E medicos for nulo)
             (medicos LIKE ?) OR (medicos IS NULL AND ? = '%%')
           ORDER BY 
             c.Data_Entrada DESC;
-        `;
+        `
         
         const [rows] = await connection.execute(query, [cpfPaciente, searchTerm, searchTerm]);
         
@@ -582,6 +682,105 @@ app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) =>
             connection.release();
         }
     }
+});
+
+app.get('/api/medico/minhas-cirurgias', authenticateToken, async (req, res) => {
+    const { busca } = req.query; 
+    const searchTerm = busca ? `%${busca}%` : '%%'; 
+    const cpfMedico = req.user.cpf; 
+
+    if (!req.user.eh_medico) {
+      return res.status(403).json({ message: 'Acesso negado. Apenas médicos podem acessar.' });
+    }
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        const query = `
+          SELECT 
+            c.CPF_P,
+            c.Numero,
+            CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
+            GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
+            DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
+            DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
+            CONCAT('Bloco ', c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Andar ', c.Andar_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
+            c.N_Tuss,
+            CASE 
+                WHEN c.Bloco_Leito IS NOT NULL THEN 
+                    CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
+                ELSE NULL 
+            END AS localizacao_leito,
+            c.Valor,
+            c.Esta_Paga
+          FROM 
+            hospital.cirurgia c
+          -- JOIN para filtrar: garante que SÓ cirurgias onde este médico atuou apareçam
+          JOIN 
+            hospital.realiza r_filter ON c.CPF_P = r_filter.CPF_P AND c.Numero = r_filter.N_Cirurgia AND r_filter.CPF_M = ?
+          JOIN 
+            hospital.usuario up ON c.CPF_P = up.cpf
+          -- JOINS para exibição: traz TODOS os médicos daquela cirurgia (mesmo que sejam outros)
+          LEFT JOIN 
+            hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
+          LEFT JOIN 
+            hospital.usuario um ON r.CPF_M = um.cpf
+          GROUP BY
+            c.CPF_P, c.Numero
+          HAVING 
+            (nome_paciente LIKE ? OR c.CPF_P LIKE ?)
+          ORDER BY 
+            c.Data_Entrada DESC;
+        `;
+        
+        const [rows] = await connection.execute(query, [cpfMedico, searchTerm, searchTerm]);
+        res.status(200).json(rows); 
+    } catch (error) {
+        console.error('Erro ao buscar (cirurgias medico):', error);
+        res.status(500).json({ message: 'Erro interno no servidor.' });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+app.delete('/api/cirurgia/deletar', authenticateToken, async (req, res) => {
+  const { cpf_p, numero } = req.body;
+
+  if (!cpf_p || !numero) {
+    return res.status(400).json({ message: 'Dados inválidos para exclusão.' });
+  }
+
+  // Segurança: Apenas Admin ou o próprio Paciente podem excluir
+  if (!req.user.eh_admin && req.user.cpf !== cpf_p) {
+    return res.status(403).json({ message: 'Acesso negado. Você não pode excluir esta cirurgia.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const query = `DELETE FROM hospital.cirurgia WHERE CPF_P = ? AND Numero = ?`;
+    
+    const [result] = await connection.execute(query, [cpf_p, numero]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Cirurgia excluída com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Cirurgia não encontrada.' });
+    }
+
+  } catch (error) {
+    console.error('Erro ao excluir cirurgia:', error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({ message: 'Não é possível excluir: existem registros dependentes.' });
+    }
+    res.status(500).json({ message: 'Erro interno ao tentar excluir a cirurgia.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
 });
 
 app.get('/api/admin/medicos', async (req, res) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./style/listaPaciente.css"; 
-import BtnCustomized from "../Buttons/ButtonCustomized";
-import { useNavigate } from "react-router-dom"; 
+import BtnCustomized from "../Buttons/ButtonCustomized.jsx";
+import { useNavigate, useLocation } from "react-router-dom"; 
 
 const formatarMoeda = (valor) => {
   const valorNumerico = parseFloat(valor) || 0;
@@ -14,10 +14,13 @@ const formatarMoeda = (valor) => {
 export default function GerenciarBuscaCirurgia() {
   const [searchTerm, setSearchTerm] = useState("");
   const [resultados, setResultados] = useState([]);
+  
+  const [cirurgiaSelecionada, setCirurgiaSelecionada] = useState(null);
 
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -35,10 +38,16 @@ export default function GerenciarBuscaCirurgia() {
   const fetchCirurgias = async (termoDeBusca) => {
     if (!user || !token) return; 
 
-    const ehAdmin = user.eh_admin;
-    const baseUrl = ehAdmin 
-      ? `http://localhost:3001/api/admin/buscar-cirurgias`
-      : `http://localhost:3001/api/paciente/minhas-cirurgias`;
+    let baseUrl = '';
+    const isMedicoPage = location.pathname.includes('/page-medico');
+
+    if (user.eh_medico && isMedicoPage) {
+      baseUrl = `http://localhost:3001/api/medico/minhas-cirurgias`;
+    } else if (user.eh_admin) {
+      baseUrl = `http://localhost:3001/api/admin/buscar-cirurgias`;
+    } else {
+      baseUrl = `http://localhost:3001/api/paciente/minhas-cirurgias`;
+    }
       
     const url = `${baseUrl}?busca=${termoDeBusca}`;
 
@@ -56,11 +65,12 @@ export default function GerenciarBuscaCirurgia() {
       if (response.ok) {
         setResultados(data);
       } else {
-        alert(data.message || "Erro ao buscar cirurgias.");
         if (response.status === 403 || response.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          alert("Sessão expirada ou acesso negado. Faça login novamente.");
+          localStorage.clear();
           navigate('/');
+        } else {
+          alert(data.message || "Erro ao buscar cirurgias.");
         }
       }
     } catch (error) {
@@ -80,14 +90,113 @@ export default function GerenciarBuscaCirurgia() {
     fetchCirurgias(searchTerm);
   };
 
+  const abrirDetalhes = (cirurgia) => {
+    setCirurgiaSelecionada(cirurgia);
+  };
+
+  const fecharDetalhes = () => {
+    setCirurgiaSelecionada(null);
+  };
+
+  const handleExcluir = async () => {
+    if (!cirurgiaSelecionada) return;
+
+    if (!window.confirm(`Tem certeza que deseja excluir a cirurgia Nº ${cirurgiaSelecionada.Numero}?`)) {
+        return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3001/api/cirurgia/deletar', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          cpf_p: cirurgiaSelecionada.CPF_P,
+          numero: cirurgiaSelecionada.Numero
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message);
+        fecharDetalhes();
+        fetchCirurgias(searchTerm); 
+      } else {
+        alert(data.message || "Erro ao excluir.");
+      }
+    } catch (error) {
+      console.error("Erro:", error);
+      alert("Erro de conexão ao tentar excluir.");
+    }
+  };
+
+  const isMedicoPage = location.pathname.includes('/page-medico');
+  const showPatientColumn = user?.eh_admin || (user?.eh_medico && isMedicoPage);
+
   const placeholder = user?.eh_admin 
     ? "Buscar por Paciente, Médico(s) ou CPF..."
-    : "Buscar por Médico(s)...";
-
-  const ehAdminView = user?.eh_admin;
+    : (isMedicoPage ? "Buscar por Paciente..." : "Buscar por Médico(s)...");
 
   return (
     <div className="container-conteudo-admin">
+      
+      {cirurgiaSelecionada && (
+        <div className="modal-overlay" onClick={fecharDetalhes}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Detalhes da Cirurgia</h2>
+            </div>
+            <div className="modal-body">
+              <p><strong>Número:</strong> {cirurgiaSelecionada.Numero}</p>
+              {showPatientColumn && (
+                 <p><strong>Paciente:</strong> {cirurgiaSelecionada.nome_paciente} (CPF: {cirurgiaSelecionada.CPF_P})</p>
+              )}
+              <p><strong>Médicos Responsáveis:</strong> {cirurgiaSelecionada.medicos || 'Nenhum atribuído'}</p>
+              <hr style={{ margin: '10px 0', borderColor: '#feeded' }}/>
+              
+              <p><strong>Data Entrada:</strong> {cirurgiaSelecionada.data_entrada_formatada}</p>
+              <p><strong>Data Finalização:</strong> {cirurgiaSelecionada.data_finalizacao_formatada || 'Em andamento'}</p>
+              <p><strong>Sala Cirúrgica:</strong> {cirurgiaSelecionada.localizacao}</p>
+              {cirurgiaSelecionada.localizacao_leito && (
+                <p><strong>Leito de Recuperação:</strong> {cirurgiaSelecionada.localizacao_leito}</p>
+              )}
+              <p><strong>Código TUSS:</strong> {cirurgiaSelecionada.N_Tuss || 'N/D'}</p>
+              
+              <hr style={{ margin: '10px 0', borderColor: '#feeded' }}/>
+              <p><strong>Valor:</strong> {formatarMoeda(cirurgiaSelecionada.Valor)}</p>
+              <p><strong>Status:</strong> {cirurgiaSelecionada.Esta_Paga ? <span style={{color:'green', fontWeight:'bold'}}>PAGA</span> : <span style={{color:'red', fontWeight:'bold'}}>PENDENTE</span>}</p>
+            </div>
+            
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+              <div style={{ marginRight: 'auto' }}>
+                 {(user?.eh_admin || user?.eh_paciente) && (
+                    <BtnCustomized
+                    size="small"
+                    TypeText="strong"
+                    text="Excluir"
+                    showImg="hidden"
+                    TypeBtn="button"
+                    onClick={handleExcluir}
+                    />
+                 )}
+              </div>
+
+              <BtnCustomized
+                size="small"
+                TypeText="strong"
+                text="Fechar"
+                showImg="hidden"
+                TypeBtn="button"
+                onClick={fecharDetalhes}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <form className="busca-container" onSubmit={handleSearchSubmit}>
         <input
           type="text"
@@ -105,12 +214,11 @@ export default function GerenciarBuscaCirurgia() {
         />
       </form>
 
-
       <div className="resultados-container">
         <table className="tabela-resultados">
           <thead>
             <tr>
-              {ehAdminView && <th>Paciente</th>} 
+              {showPatientColumn && <th>Paciente</th>} 
               <th>Médico(s)</th>
               <th>Data Entrada</th>
               <th>Data Finalização</th>
@@ -122,10 +230,13 @@ export default function GerenciarBuscaCirurgia() {
           <tbody>
             {resultados.length > 0 ? (
               resultados.map((cirurgia) => (
-                <tr key={cirurgia.CPF_P + cirurgia.Numero}> 
-                  
-                  {ehAdminView && <td>{cirurgia.nome_paciente}</td>}
-                  
+                <tr 
+                  key={cirurgia.CPF_P + cirurgia.Numero}
+                  onClick={() => abrirDetalhes(cirurgia)} 
+                  className="linha-clicavel"             
+                  title="Clique para ver detalhes"
+                >
+                  {showPatientColumn && <td>{cirurgia.nome_paciente}</td>}
                   <td>{cirurgia.medicos || 'N/D'}</td>
                   <td>{cirurgia.data_entrada_formatada}</td>
                   <td>{cirurgia.data_finalizacao_formatada || 'Pendente'}</td>
@@ -136,7 +247,7 @@ export default function GerenciarBuscaCirurgia() {
               ))
             ) : (
               <tr>
-                <td colSpan={ehAdminView ? 7 : 6} style={{ textAlign: "center" }}>
+                <td colSpan={showPatientColumn ? 7 : 6} style={{ textAlign: "center" }}>
                   Nenhuma cirurgia encontrada.
                 </td>
               </tr>

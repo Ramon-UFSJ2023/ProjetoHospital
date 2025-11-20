@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+// Correção: Garantindo que o caminho para o CSS está correto baseado na estrutura de arquivos enviada
 import "./style/listaPaciente.css"; 
-import BtnCustomized from "../Buttons/ButtonCustomized";
-import { useNavigate } from "react-router-dom";
+// Correção: Ajustando o caminho para o componente de botão
+import BtnCustomized from "../Buttons/ButtonCustomized.jsx";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const formatarMoeda = (valor) => {
   const valorNumerico = parseFloat(valor) || 0;
@@ -15,9 +17,13 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [resultados, setResultados] = useState([]);
   
+  // Estado para controlar qual consulta foi clicada (Modal)
+  const [consultaSelecionada, setConsultaSelecionada] = useState(null);
+  
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation(); // Hook para pegar a rota atual
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -35,10 +41,18 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
   const fetchConsultas = async (termoDeBusca) => {
     if (!user || !token) return; 
 
-    const ehAdmin = user.eh_admin;
-    const baseUrl = ehAdmin 
-      ? `http://localhost:3001/api/admin/buscar-consultas`
-      : `http://localhost:3001/api/paciente/minhas-consultas`;
+    let baseUrl = '';
+    
+    const isMedicoPage = location.pathname.includes('/page-medico');
+
+    // Lógica de definição da rota da API
+    if (user.eh_medico && isMedicoPage) {
+      baseUrl = `http://localhost:3001/api/medico/minhas-consultas`;
+    } else if (user.eh_admin) {
+      baseUrl = `http://localhost:3001/api/admin/buscar-consultas`;
+    } else {
+      baseUrl = `http://localhost:3001/api/paciente/minhas-consultas`;
+    }
       
     const url = `${baseUrl}?busca=${termoDeBusca}`;
 
@@ -47,7 +61,7 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -56,11 +70,12 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
       if (response.ok) {
         setResultados(data);
       } else {
-        alert(data.message || "Erro ao buscar consultas.");
-        if (response.status === 403 || response.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/'); 
+        if (response.status === 401 || response.status === 403) {
+          alert("Sessão expirada ou acesso negado. Por favor, faça login novamente.");
+          localStorage.clear();
+          navigate('/');
+        } else {
+          alert(data.message || "Erro ao buscar consultas.");
         }
       }
     } catch (error) {
@@ -84,14 +99,118 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
     onNavigateClick("Marcar Consulta"); 
   };
 
+  const abrirDetalhes = (consulta) => {
+    setConsultaSelecionada(consulta);
+  };
+
+  const fecharDetalhes = () => {
+    setConsultaSelecionada(null);
+  };
+
+  const handleExcluir = async () => {
+    if (!consultaSelecionada) return;
+
+    const confirmacao = window.confirm(
+      `Tem certeza que deseja excluir a consulta Nº ${consultaSelecionada.Numero}?`
+    );
+
+    if (!confirmacao) return;
+
+    try {
+      const response = await fetch('http://localhost:3001/api/consulta/deletar', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          cpf_p: consultaSelecionada.CPF_P,
+          numero: consultaSelecionada.Numero
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message);
+        fecharDetalhes(); 
+        fetchConsultas(searchTerm); 
+      } else {
+        alert(data.message || "Erro ao excluir consulta.");
+      }
+    } catch (error) {
+      console.error("Erro de rede:", error);
+      alert("Erro de conexão ao tentar excluir.");
+    }
+  };
+
+  // Lógica de visualização condicional
+  const isMedicoPage = location.pathname.includes('/page-medico');
+  const showPatientColumn = user?.eh_admin || (user?.eh_medico && isMedicoPage);
+
   const placeholder = user?.eh_admin 
     ? "Buscar por Paciente, Médico ou CPF..."
-    : "Buscar por Médico ou CPF do Médico...";
+    : (isMedicoPage ? "Buscar por Paciente..." : "Buscar por Médico...");
 
-  const ehAdminView = user?.eh_admin;
 
   return (
     <div className="container-conteudo-admin">
+      
+      {/* --- MODAL DE DETALHES --- */}
+      {consultaSelecionada && (
+        <div className="modal-overlay" onClick={fecharDetalhes}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Detalhes da Consulta</h2>
+            </div>
+            <div className="modal-body">
+              <p><strong>Número:</strong> {consultaSelecionada.Numero}</p>
+              
+              {/* Exibe Paciente se for Admin ou Médico na área dele */}
+              {showPatientColumn && (
+                 <p><strong>Paciente:</strong> {consultaSelecionada.nome_paciente} (CPF: {consultaSelecionada.CPF_P})</p>
+              )}
+              
+              <p><strong>Médico:</strong> {consultaSelecionada.nome_medico}</p>
+              <hr style={{ margin: '10px 0', borderColor: '#feeded' }}/>
+              
+              <p><strong>Data Início:</strong> {consultaSelecionada.data_consulta}</p>
+              <p><strong>Previsão Término:</strong> {consultaSelecionada.horario_fim_formatado || '---'}</p>
+              <p><strong>Local:</strong> {consultaSelecionada.localizacao}</p>
+              
+              <hr style={{ margin: '10px 0', borderColor: '#feeded' }}/>
+              <p><strong>Valor:</strong> {formatarMoeda(consultaSelecionada.Valor)}</p>
+              <p><strong>Status:</strong> {consultaSelecionada.Esta_Paga ? <span style={{color:'green', fontWeight:'bold'}}>PAGA</span> : <span style={{color:'red', fontWeight:'bold'}}>PENDENTE</span>}</p>
+              <p><strong>Tipo:</strong> {consultaSelecionada.Internacao ? "Internação" : "Consulta Ambulatorial"}</p>
+            </div>
+            
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+              <div style={{ marginRight: 'auto' }}>
+                 {(user?.eh_admin || user?.eh_paciente) && (
+                   <BtnCustomized
+                    size="small"
+                    TypeText="strong"
+                    text="Excluir"
+                    showImg="hidden"
+                    TypeBtn="button"
+                    onClick={handleExcluir}
+                    />
+                 )}
+              </div>
+
+              <BtnCustomized
+                size="small"
+                TypeText="strong"
+                text="Fechar"
+                showImg="hidden"
+                TypeBtn="button"
+                onClick={fecharDetalhes}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <form className="busca-container" onSubmit={handleSearchSubmit}>
         <input
           type="text"
@@ -108,7 +227,7 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
           TypeBtn="submit"
         />
         
-        {user && user.eh_paciente && (
+        {user && user.eh_paciente && !isMedicoPage && (
           <BtnCustomized
             size="medium"
             TypeText="strong"
@@ -124,7 +243,8 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
         <table className="tabela-resultados">
           <thead>
             <tr>
-              {ehAdminView && <th>Paciente</th>} 
+              {/* Cabeçalho condicional */}
+              {showPatientColumn && <th>Paciente</th>} 
               <th>Médico</th>
               <th>Data e Hora</th>
               <th>Localização</th>
@@ -136,10 +256,13 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
           <tbody>
             {resultados.length > 0 ? (
               resultados.map((consulta) => (
-                <tr key={consulta.CPF_P + consulta.Numero}>
-                  
-                  {ehAdminView && <td>{consulta.nome_paciente}</td>}
-                  
+                <tr 
+                  key={consulta.CPF_P + consulta.Numero}
+                  onClick={() => abrirDetalhes(consulta)}
+                  className="linha-clicavel"
+                  title="Clique para ver detalhes"
+                >
+                  {showPatientColumn && <td>{consulta.nome_paciente}</td>}
                   <td>{consulta.nome_medico}</td>
                   <td>{consulta.data_consulta}</td>
                   <td>{consulta.localizacao}</td>
@@ -150,7 +273,7 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
               ))
             ) : (
               <tr>
-                <td colSpan={ehAdminView ? 7 : 6} style={{ textAlign: "center" }}>
+                <td colSpan={showPatientColumn ? 7 : 6} style={{ textAlign: "center" }}>
                   Nenhuma consulta encontrada.
                 </td>
               </tr>

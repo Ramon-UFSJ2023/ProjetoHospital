@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import "./style/alocacao.css";
-import DatePicker from "react-datepicker";
+import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { ptBR } from 'date-fns/locale';
+
+registerLocale('ptBR', ptBR);
 
 const getInicioDaSemana = (date) => {
   const d = new Date(date);
@@ -14,6 +16,7 @@ const getInicioDaSemana = (date) => {
 };
 
 const formatarDataLocalSQL = (date) => {
+  if (!date) return "";
   const ano = date.getFullYear();
   const mes = (date.getMonth() + 1).toString().padStart(2, '0');
   const dia = date.getDate().toString().padStart(2, '0');
@@ -21,6 +24,7 @@ const formatarDataLocalSQL = (date) => {
 };
 
 const formatarDataHoraLocalSQL = (date) => {
+  if (!date) return "";
   const data = formatarDataLocalSQL(date);
   const hora = date.getHours().toString().padStart(2, '0');
   const minuto = date.getMinutes().toString().padStart(2, '0');
@@ -69,11 +73,12 @@ export default function GerenciarAlocacoes() {
     const inicioSemana = getInicioDaSemana(semanaSelecionada);
     const fimSemana = new Date(inicioSemana);
     fimSemana.setDate(fimSemana.getDate() + 6); 
+    fimSemana.setHours(23, 59, 59, 999);
 
     const params = new URLSearchParams({
       ...consultorioSelecionado, 
-      data_inicio_semana: `${formatarDataLocalSQL(inicioSemana)} 00:00:00`,
-      data_fim_semana: `${formatarDataLocalSQL(fimSemana)} 23:59:59`,
+      data_inicio_semana: formatarDataHoraLocalSQL(inicioSemana),
+      data_fim_semana: formatarDataHoraLocalSQL(fimSemana),
     });
 
     fetch(`http://localhost:3001/api/admin/alocacoes?${params.toString()}`)
@@ -83,10 +88,12 @@ export default function GerenciarAlocacoes() {
   };
 
   const getDataDoSlot = (diaIndex, horario) => {
-    const dataBase = new Date(semanaSelecionada);
-    dataBase.setDate(dataBase.getDate() + diaIndex - 1); 
+    const dataBase = new Date(semanaSelecionada.getTime());
+    dataBase.setDate(dataBase.getDate() + (diaIndex - 1));
+    
     const [hora, minuto] = horario.split(':');
     dataBase.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+    
     return dataBase;
   };
 
@@ -102,6 +109,8 @@ export default function GerenciarAlocacoes() {
 
     const dataHoraInicioSQL = formatarDataHoraLocalSQL(dataHoraInicio);
     const dataHoraFimSQL = formatarDataHoraLocalSQL(dataHoraFim);
+
+    console.log("Tentando alocar em:", dataHoraInicioSQL); 
 
     const alocacaoExistente = getAlocacaoDoSlot(diaIndex, horario);
 
@@ -126,6 +135,10 @@ export default function GerenciarAlocacoes() {
         .then(data => {
           alert(data.message);
           fetchAlocacoes(); 
+        })
+        .catch(err => {
+            console.error("Erro ao desalocar:", err);
+            alert("Erro ao conectar com servidor.");
         });
       }
     } else {
@@ -154,9 +167,13 @@ export default function GerenciarAlocacoes() {
         .then(res => res.json())
         .then(data => {
           alert(data.message);
-          if (data.message.includes("sucesso")) {
+          if (data.message && data.message.includes("sucesso")) {
             fetchAlocacoes(); 
           }
+        })
+        .catch(err => {
+             console.error("Erro ao alocar:", err);
+             alert("Erro ao conectar com servidor.");
         });
       }
     }
@@ -164,10 +181,11 @@ export default function GerenciarAlocacoes() {
 
   const getAlocacaoDoSlot = (diaIndex, horario) => {
     const dataSlot = getDataDoSlot(diaIndex, horario);
-    
+    const timeSlot = dataSlot.getTime();
+
     return alocacoes.find(a => {
-      const dataInicioAlocacao = new Date(a.Data_Inicio);
-      return dataInicioAlocacao.getTime() === dataSlot.getTime();
+        const dataInicioAlocacao = new Date(a.Data_Inicio);
+        return Math.abs(dataInicioAlocacao.getTime() - timeSlot) < 1000; 
     });
   };
 
@@ -175,13 +193,15 @@ export default function GerenciarAlocacoes() {
     <div className="container-conteudo-admin">
       <div className="alocacao-controles">
         <div className="input-groups-CadFun">
-          <label>Selecione a Semana:</label>
+          <label>Selecione a Semana (Segunda-feira):</label>
           <DatePicker
             selected={semanaSelecionada}
             onChange={(date) => setSemanaSelecionada(getInicioDaSemana(date))}
             className="inputs-Cad-Fun"
             dateFormat="dd/MM/yyyy"
-            locale={ptBR}
+            locale="ptBR"
+            calendarStartDay={1} 
+            filterDate={(date) => date.getDay() === 1} 
           />
         </div>
         <div className="input-groups-CadFun">
@@ -251,6 +271,7 @@ export default function GerenciarAlocacoes() {
                         {alocacao ? (
                           <>
                             <strong>{alocacao.nome_medico}</strong>
+                            <br/>
                             <small>(Clique p/ desalocar)</small>
                           </>
                         ) : "Livre"}
