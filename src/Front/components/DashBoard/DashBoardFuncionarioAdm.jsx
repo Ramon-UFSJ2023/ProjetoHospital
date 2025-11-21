@@ -5,36 +5,40 @@ import ListaPacientes from "../ConteudosDashBoard/ListaPacientes";
 import ListaFuncionario from "../ConteudosDashBoard/ListaFuncionario.jsx";
 import ListaConsultas from "../ConteudosDashBoard/ListaConsultas.jsx";
 import ListaCirurgias from "../ConteudosDashBoard/ListaCirurgias.jsx";
-import AlocacaoConsultorios from "../ConteudosDashBoard/AlocacaoConsultorios.jsx";
+import GerenciadorAlocacoes from "../ConteudosDashBoard/GerenciadorAlocacoes.jsx";
+import MarcarCirurgia from "../ConteudosDashBoard/MarcarCirurgia.jsx"; 
 
 import PropTypes from "prop-types";
 
 export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
   const rendCont = () => {
     switch (stateNow) {
-      case itens[0].label:
+      case "Consultas":
         return <ListaConsultas />;
 
-      case itens[1].label:
-        return <AlocacaoConsultorios />;
+      case "Alocações": 
+        return <GerenciadorAlocacoes />;
 
-      case itens[2].label:
+      case "Cirurgias":
         return <ListaCirurgias />;
+      
+      case "Marcar Cirurgia": 
+        return <MarcarCirurgia />;
 
-      case itens[3].label:
+      case "Pacientes":
         return <ListaPacientes />;
 
-      case itens[4].label: 
+      case "Funcionários": 
         return <ListaFuncionario />;
         
-      case itens[5].label: 
+      case "Cadastrar Pacientes/Funcionários": 
         return <GerenciasCadastroAdm />;
 
-      case itens[6].label: 
+      case "Salas": 
         return <CadastroSala />;
 
       default:
-        return <h1>teste</h1>;
+        return <h1 style={{textAlign:'center', padding:'50px'}}>Selecione uma opção no menu superior</h1>;
     }
   };
 
@@ -43,4 +47,5 @@ export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
 
 DashBoardFuncionarioAdm.propTypes = {
   stateNow: PropTypes.string,
+  itens: PropTypes.array,
 };

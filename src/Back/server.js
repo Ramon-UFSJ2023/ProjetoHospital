@@ -279,7 +279,6 @@ app.get('/api/admin/buscar-pacientes', async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
-    
 
     const query = `
       SELECT 
@@ -287,8 +286,14 @@ app.get('/api/admin/buscar-pacientes', async (req, res) => {
         u.primeiro_nome, 
         u.sobrenome, 
         u.email, 
-        u.cidade, 
-        DATE_FORMAT(u.data_nascimento, '%d/%m/%Y') AS data_nascimento_formatada
+        u.genero,
+        u.rua, u.numero, u.bairro, u.cidade, u.cep,
+        DATE_FORMAT(u.data_nascimento, '%d/%m/%Y') AS data_nascimento_formatada,
+        
+        p.Observacoes,
+        
+        (SELECT N_Telefone FROM hospital.telefone t WHERE t.cpf = u.cpf LIMIT 1) AS telefone
+
       FROM 
         hospital.usuario u
       JOIN 
@@ -313,6 +318,44 @@ app.get('/api/admin/buscar-pacientes', async (req, res) => {
   }
 });
 
+app.delete('/api/admin/paciente/deletar', authenticateToken, async (req, res) => {
+  if (!req.user.eh_admin) {
+    return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
+  }
+
+  const { cpf } = req.body;
+
+  if (!cpf) {
+    return res.status(400).json({ message: 'CPF do paciente é obrigatório.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const query = 'DELETE FROM hospital.usuario WHERE cpf = ?';
+    
+    const [result] = await connection.execute(query, [cpf]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Paciente excluído com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Paciente não encontrado.' });
+    }
+
+  } catch (error) {
+    console.error('Erro ao excluir paciente:', error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({ message: 'Não é possível excluir este paciente pois existem registros dependentes que impedem a ação.' });
+    }
+    res.status(500).json({ message: 'Erro interno ao tentar excluir.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
 app.get('/api/admin/buscar-funcionarios', async (req, res) => {
   const { busca } = req.query; 
   const searchTerm = busca ? `%${busca}%` : '%%'; 
@@ -326,15 +369,35 @@ app.get('/api/admin/buscar-funcionarios', async (req, res) => {
         u.cpf, 
         u.primeiro_nome, 
         u.sobrenome, 
-        u.email, 
+        u.email,
+        u.rua, u.numero, u.bairro, u.cidade, u.cep,
+        DATE_FORMAT(u.data_nascimento, '%d/%m/%Y') AS data_nascimento_formatada,
+        u.genero,
+        
         f.Salario,
         f.Eh_admin,
-        -- Cria uma coluna 'cargo' baseada nas outras tabelas
+        f.Eh_Conselho,
+        f.Carga_Horaria,
+        
+        m.CRM, 
+        m.Especialidade,
+        e.COFEN, 
+        e.Formacao,
+        
+        (SELECT N_Telefone FROM hospital.telefone t WHERE t.cpf = u.cpf LIMIT 1) AS telefone,
+
         CASE
             WHEN m.cpf IS NOT NULL THEN CONCAT('Médico (', m.Especialidade, ')')
-            WHEN e.cpf IS NOT NULL THEN e.Formacao
+            WHEN e.cpf IS NOT NULL THEN CONCAT('Enfermeiro (', e.Formacao, ')')
             ELSE 'Administrativo/Outro'
-        END AS cargo
+        END AS cargo,
+        
+        CASE
+            WHEN m.cpf IS NOT NULL THEN 'MEDICO'
+            WHEN e.cpf IS NOT NULL THEN 'ENFERMEIRO'
+            ELSE 'OUTRO'
+        END AS tipo_funcionario
+
       FROM 
         hospital.usuario u
       JOIN 
@@ -363,6 +426,50 @@ app.get('/api/admin/buscar-funcionarios', async (req, res) => {
   }
 });
 
+app.delete('/api/admin/funcionario/deletar', authenticateToken, async (req, res) => {
+  if (!req.user.eh_admin) {
+    return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
+  }
+
+  const { cpf } = req.body;
+
+  if (!cpf) {
+    return res.status(400).json({ message: 'CPF do funcionário é obrigatório.' });
+  }
+
+  if (cpf === req.user.cpf) {
+    return res.status(400).json({ message: 'Você não pode excluir sua própria conta por aqui.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const query = 'DELETE FROM hospital.usuario WHERE cpf = ?';
+    
+    const [result] = await connection.execute(query, [cpf]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Funcionário excluído com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Funcionário não encontrado.' });
+    }
+
+  } catch (error) {
+    console.error('Erro ao excluir funcionário:', error);
+    
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({ message: 'Não é possível excluir: este funcionário possui registros (consultas/cirurgias) vinculados.' });
+    }
+    
+    res.status(500).json({ message: 'Erro interno ao tentar excluir.' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
 app.get('/api/admin/buscar-consultas', authenticateToken, async (req, res) => {
   if (!req.user.eh_admin) {
     return res.status(403).json({ message: 'Acesso negado. Requer privilégios de administrador.' });
@@ -382,7 +489,7 @@ app.get('/api/admin/buscar-consultas', authenticateToken, async (req, res) => {
         CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
         CONCAT(um.primeiro_nome, ' ', um.sobrenome) AS nome_medico,
         DATE_FORMAT(c.Data_Inicio, '%d/%m/%Y %H:%i') AS data_consulta,
-        DATE_FORMAT(c.Horario_Fim, '%H:%i') AS horario_fim_formatado, -- ADICIONADO
+        DATE_FORMAT(c.Horario_Fim, '%H:%i') AS horario_fim_formatado, 
         CONCAT('Bloco ',c.Bloco_Consultorio, ' / Anexo ', c.Anexo_Consultorio, ' / Andar ', c.Andar_Consultorio, ' / Sala ', c.N_Consultorio) AS localizacao,
         c.Valor,
         c.Esta_Paga,
@@ -429,7 +536,6 @@ app.get('/api/paciente/minhas-consultas', authenticateToken, async (req, res) =>
     try {
         connection = await pool.getConnection();
         
-        // Query limpa e corrigida
         const query = `
           SELECT 
             c.CPF_P,
@@ -464,7 +570,6 @@ app.get('/api/paciente/minhas-consultas', authenticateToken, async (req, res) =>
 
     } catch (error) {
         console.error('Erro ao buscar (minhas consultas):', error);
-        // Dica: Olhe no terminal onde o servidor (backend) está rodando para ver o erro detalhado
         res.status(500).json({ message: 'Erro interno no servidor ao buscar suas consultas.' });
     } finally {
         if (connection) {
@@ -521,8 +626,6 @@ app.delete('/api/consulta/deletar', authenticateToken, async (req, res) => {
     return res.status(400).json({ message: 'Dados inválidos para exclusão.' });
   }
 
-  // Regra de Segurança: 
-  // Se NÃO for admin E o CPF da consulta for diferente do CPF do token, bloqueia.
   if (!req.user.eh_admin && req.user.cpf !== cpf_p) {
     return res.status(403).json({ message: 'Acesso negado. Você não pode excluir esta consulta.' });
   }
@@ -543,7 +646,6 @@ app.delete('/api/consulta/deletar', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao excluir consulta:', error);
-    // Verifica se é erro de chave estrangeira (ex: se a consulta já tem exames vinculados que impedem delete)
     if (error.code === 'ER_ROW_IS_REFERENCED_2') {
         return res.status(409).json({ message: 'Não é possível excluir: existem registros dependentes desta consulta.' });
     }
@@ -573,11 +675,11 @@ app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
         c.Numero,
         CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
         GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
+        GROUP_CONCAT(DISTINCT CONCAT(ue.primeiro_nome, ' ', ue.sobrenome) SEPARATOR ', ') AS enfermeiros,
         DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
         DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
         CONCAT('Bloco ', c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Andar ', c.Andar_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
         
-        -- Novos campos para o modal
         c.N_Tuss,
         CASE 
             WHEN c.Bloco_Leito IS NOT NULL THEN 
@@ -595,6 +697,11 @@ app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
         hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
       LEFT JOIN 
         hospital.usuario um ON r.CPF_M = um.cpf
+      LEFT JOIN 
+        hospital.enfermeiro_participa_cirurgia epc ON c.CPF_P = epc.CPF_P AND c.Numero = epc.Numero_Cirurgia
+      LEFT JOIN 
+        hospital.usuario ue ON epc.CPF_E = ue.cpf
+
       GROUP BY
         c.CPF_P, c.Numero
       HAVING 
@@ -621,12 +728,9 @@ app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
 app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) => {
     const { busca } = req.query; 
     const searchTerm = busca ? `%${busca}%` : '%%'; 
-    
     const cpfPaciente = req.user.cpf; 
 
-    if (!cpfPaciente) {
-        return res.status(400).json({ message: 'CPF do usuário não encontrado no token.' });
-    }
+    if (!cpfPaciente) return res.status(400).json({ message: 'CPF não encontrado.' });
 
     let connection;
     try {
@@ -638,18 +742,17 @@ app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) =>
             c.Numero,
             CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
             GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
+            GROUP_CONCAT(DISTINCT CONCAT(ue.primeiro_nome, ' ', ue.sobrenome) SEPARATOR ', ') AS enfermeiros,
+
             DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
             DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
             CONCAT(c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
-            
-            -- Novos campos
             c.N_Tuss,
             CASE 
                 WHEN c.Bloco_Leito IS NOT NULL THEN 
                     CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
                 ELSE NULL 
             END AS localizacao_leito,
-
             c.Valor,
             c.Esta_Paga
           FROM 
@@ -660,6 +763,10 @@ app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) =>
             hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
           LEFT JOIN 
             hospital.usuario um ON r.CPF_M = um.cpf
+          LEFT JOIN 
+            hospital.enfermeiro_participa_cirurgia epc ON c.CPF_P = epc.CPF_P AND c.Numero = epc.Numero_Cirurgia
+          LEFT JOIN 
+            hospital.usuario ue ON epc.CPF_E = ue.cpf
           WHERE
             c.CPF_P = ? 
           GROUP BY
@@ -668,19 +775,15 @@ app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) =>
             (medicos LIKE ?) OR (medicos IS NULL AND ? = '%%')
           ORDER BY 
             c.Data_Entrada DESC;
-        `
+        `;
         
         const [rows] = await connection.execute(query, [cpfPaciente, searchTerm, searchTerm]);
-        
         res.status(200).json(rows); 
-
     } catch (error) {
-        console.error('Erro ao buscar (minhas cirurgias):', error);
-        res.status(500).json({ message: 'Erro interno no servidor ao buscar suas cirurgias.' });
+        console.error('Erro (paciente):', error);
+        res.status(500).json({ message: 'Erro interno.' });
     } finally {
-        if (connection) {
-            connection.release();
-        }
+        if (connection) connection.release();
     }
 });
 
@@ -689,9 +792,7 @@ app.get('/api/medico/minhas-cirurgias', authenticateToken, async (req, res) => {
     const searchTerm = busca ? `%${busca}%` : '%%'; 
     const cpfMedico = req.user.cpf; 
 
-    if (!req.user.eh_medico) {
-      return res.status(403).json({ message: 'Acesso negado. Apenas médicos podem acessar.' });
-    }
+    if (!req.user.eh_medico) return res.status(403).json({ message: 'Acesso negado.' });
 
     let connection;
     try {
@@ -703,6 +804,8 @@ app.get('/api/medico/minhas-cirurgias', authenticateToken, async (req, res) => {
             c.Numero,
             CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
             GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
+            GROUP_CONCAT(DISTINCT CONCAT(ue.primeiro_nome, ' ', ue.sobrenome) SEPARATOR ', ') AS enfermeiros,
+
             DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
             DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
             CONCAT('Bloco ', c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Andar ', c.Andar_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
@@ -716,16 +819,18 @@ app.get('/api/medico/minhas-cirurgias', authenticateToken, async (req, res) => {
             c.Esta_Paga
           FROM 
             hospital.cirurgia c
-          -- JOIN para filtrar: garante que SÓ cirurgias onde este médico atuou apareçam
           JOIN 
             hospital.realiza r_filter ON c.CPF_P = r_filter.CPF_P AND c.Numero = r_filter.N_Cirurgia AND r_filter.CPF_M = ?
           JOIN 
             hospital.usuario up ON c.CPF_P = up.cpf
-          -- JOINS para exibição: traz TODOS os médicos daquela cirurgia (mesmo que sejam outros)
           LEFT JOIN 
             hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
           LEFT JOIN 
             hospital.usuario um ON r.CPF_M = um.cpf
+          LEFT JOIN 
+            hospital.enfermeiro_participa_cirurgia epc ON c.CPF_P = epc.CPF_P AND c.Numero = epc.Numero_Cirurgia
+          LEFT JOIN 
+            hospital.usuario ue ON epc.CPF_E = ue.cpf
           GROUP BY
             c.CPF_P, c.Numero
           HAVING 
@@ -737,8 +842,75 @@ app.get('/api/medico/minhas-cirurgias', authenticateToken, async (req, res) => {
         const [rows] = await connection.execute(query, [cpfMedico, searchTerm, searchTerm]);
         res.status(200).json(rows); 
     } catch (error) {
-        console.error('Erro ao buscar (cirurgias medico):', error);
-        res.status(500).json({ message: 'Erro interno no servidor.' });
+        console.error('Erro (medico):', error);
+        res.status(500).json({ message: 'Erro interno.' });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+app.get('/api/enfermeiro/minhas-cirurgias', authenticateToken, async (req, res) => {
+    const { busca } = req.query; 
+    const searchTerm = busca ? `%${busca}%` : '%%'; 
+    const cpfEnfermeiro = req.user.cpf; 
+
+    if (!req.user.eh_enfermeiro) return res.status(403).json({ message: 'Acesso negado. Apenas enfermeiros.' });
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        const query = `
+          SELECT 
+            c.CPF_P,
+            c.Numero,
+            CONCAT(up.primeiro_nome, ' ', up.sobrenome) AS nome_paciente,
+            GROUP_CONCAT(DISTINCT CONCAT(um.primeiro_nome, ' ', um.sobrenome) SEPARATOR ', ') AS medicos,
+            GROUP_CONCAT(DISTINCT CONCAT(ue.primeiro_nome, ' ', ue.sobrenome) SEPARATOR ', ') AS enfermeiros,
+
+            DATE_FORMAT(c.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
+            DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
+            CONCAT('Bloco ', c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Andar ', c.Andar_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
+            c.N_Tuss,
+            CASE 
+                WHEN c.Bloco_Leito IS NOT NULL THEN 
+                    CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
+                ELSE NULL 
+            END AS localizacao_leito,
+            c.Valor,
+            c.Esta_Paga
+          FROM 
+            hospital.cirurgia c
+          
+          JOIN 
+            hospital.enfermeiro_participa_cirurgia my_epc ON c.CPF_P = my_epc.CPF_P AND c.Numero = my_epc.Numero_Cirurgia AND my_epc.CPF_E = ?
+            
+          JOIN 
+            hospital.usuario up ON c.CPF_P = up.cpf
+            
+          LEFT JOIN 
+            hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
+          LEFT JOIN 
+            hospital.usuario um ON r.CPF_M = um.cpf
+            
+          LEFT JOIN 
+            hospital.enfermeiro_participa_cirurgia epc ON c.CPF_P = epc.CPF_P AND c.Numero = epc.Numero_Cirurgia
+          LEFT JOIN 
+            hospital.usuario ue ON epc.CPF_E = ue.cpf
+            
+          GROUP BY
+            c.CPF_P, c.Numero
+          HAVING 
+            (nome_paciente LIKE ? OR medicos LIKE ?)
+          ORDER BY 
+            c.Data_Entrada DESC;
+        `;
+        
+        const [rows] = await connection.execute(query, [cpfEnfermeiro, searchTerm, searchTerm]);
+        res.status(200).json(rows); 
+    } catch (error) {
+        console.error('Erro (enfermeiro):', error);
+        res.status(500).json({ message: 'Erro interno.' });
     } finally {
         if (connection) connection.release();
     }
@@ -751,7 +923,6 @@ app.delete('/api/cirurgia/deletar', authenticateToken, async (req, res) => {
     return res.status(400).json({ message: 'Dados inválidos para exclusão.' });
   }
 
-  // Segurança: Apenas Admin ou o próprio Paciente podem excluir
   if (!req.user.eh_admin && req.user.cpf !== cpf_p) {
     return res.status(403).json({ message: 'Acesso negado. Você não pode excluir esta cirurgia.' });
   }
@@ -780,6 +951,151 @@ app.delete('/api/cirurgia/deletar', authenticateToken, async (req, res) => {
     if (connection) {
       connection.release();
     }
+  }
+});
+
+app.get('/api/admin/salas-cirurgia', authenticateToken, async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT Bloco, Anexo, Andar, N_Sala, Capacidade 
+      FROM hospital.sala_cirurgia
+      ORDER BY Bloco, N_Sala;
+    `;
+    const [rows] = await connection.execute(query);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar salas de cirurgia:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/admin/leitos-disponiveis', authenticateToken, async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT 
+        l.Bloco_Leito, l.Anexo_Leito, l.Andar_Leito, l.N_Sala, l.N_Leito, 
+        sl.Tipo_Leito
+      FROM hospital.leito l
+      JOIN hospital.sala_leito sl ON 
+        l.Bloco_Leito = sl.Bloco AND 
+        l.Anexo_Leito = sl.Anexo AND 
+        l.Andar_Leito = sl.Andar AND 
+        l.N_Sala = sl.N_Sala
+      WHERE l.Ocupado = 0
+      ORDER BY sl.Tipo_Leito, l.Bloco_Leito, l.N_Sala;
+    `;
+    const [rows] = await connection.execute(query);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar leitos:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/admin/enfermeiros', authenticateToken, async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT u.cpf, CONCAT(u.primeiro_nome, ' ', u.sobrenome) AS nome_completo, e.COFEN
+      FROM hospital.usuario u
+      JOIN hospital.enfermeiro e ON u.cpf = e.cpf
+      ORDER BY u.primeiro_nome;
+    `;
+    const [rows] = await connection.execute(query);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar enfermeiros:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/medico/marcar-cirurgia', authenticateToken, async (req, res) => {
+  const { 
+    cpf_p, data_entrada, sala_cirurgia, leito, 
+    enfermeiros, n_tuss, valor, medico_responsavel 
+  } = req.body;
+
+  const cpf_medico_principal = req.user.eh_medico ? req.user.cpf : medico_responsavel;
+
+  if (!cpf_p || !data_entrada || !sala_cirurgia || !cpf_medico_principal) {
+    return res.status(400).json({ message: 'Dados obrigatórios faltando.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    const [rowsNum] = await connection.execute(
+      `SELECT IFNULL(MAX(Numero), 0) + 1 AS proximo FROM hospital.cirurgia WHERE CPF_P = ?`, 
+      [cpf_p]
+    );
+    const numeroCirurgia = rowsNum[0].proximo;
+
+    const blocoLeito = leito ? leito.bloco : null;
+    const anexoLeito = leito ? leito.anexo : null;
+    const andarLeito = leito ? leito.andar : null;
+    const salaLeito = leito ? leito.sala : null;
+    const numLeito = leito ? leito.numero : null;
+    const dataEntradaLeito = leito ? data_entrada : null
+
+    const queryCirurgia = `
+      INSERT INTO hospital.cirurgia 
+      (CPF_P, Numero, Data_Entrada, Valor, N_Tuss, 
+       Bloco_Sala_Cirurgia, Anexo_Sala_Cirurgia, Andar_Sala_Cirurgia, N_Sala_Cirurgia,
+       Bloco_Leito, Anexo_Leito, Andar_Leito, N_Sala_Leito, N_Leito, Data_Entrada_Leito)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    await connection.execute(queryCirurgia, [
+      cpf_p, numeroCirurgia, data_entrada, valor || 0, n_tuss,
+      sala_cirurgia.bloco, sala_cirurgia.anexo, sala_cirurgia.andar, sala_cirurgia.numero,
+      blocoLeito, anexoLeito, andarLeito, salaLeito, numLeito, dataEntradaLeito
+    ]);
+
+    await connection.execute(
+      `INSERT INTO hospital.realiza (CPF_M, CPF_P, N_Cirurgia) VALUES (?, ?, ?)`,
+      [cpf_medico_principal, cpf_p, numeroCirurgia]
+    );
+
+    if (enfermeiros && enfermeiros.length > 0) {
+      for (const cpf_enf of enfermeiros) {
+        await connection.execute(
+          `INSERT INTO hospital.enfermeiro_participa_cirurgia (CPF_E, CPF_P, Numero_Cirurgia) VALUES (?, ?, ?)`,
+          [cpf_enf, cpf_p, numeroCirurgia]
+        );
+      }
+    }
+
+    if (leito) {
+      await connection.execute(
+        `UPDATE hospital.leito 
+         SET Ocupado = 1 
+         WHERE Bloco_Leito = ? AND Anexo_Leito = ? AND Andar_Leito = ? AND N_Sala = ? AND N_Leito = ?`,
+        [blocoLeito, anexoLeito, andarLeito, salaLeito, numLeito]
+      );
+    }
+
+    await connection.commit();
+    res.status(201).json({ message: 'Cirurgia marcada com sucesso!' });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error('Erro ao marcar cirurgia:', error);
+    res.status(500).json({ message: 'Erro ao marcar cirurgia.' });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
@@ -945,10 +1261,9 @@ app.get('/api/admin/buscar-alocacoes-leitos', async (req, res) => {
     
     const query = `
       SELECT 
-        cl.CPF_E,
-        CONCAT(u.primeiro_nome, ' ', u.sobrenome) AS nome_enfermeiro,
+        GROUP_CONCAT(DISTINCT cl.CPF_E SEPARATOR ', ') AS cpfs_enfermeiros,
+        GROUP_CONCAT(DISTINCT CONCAT(u.primeiro_nome, ' ', u.sobrenome) SEPARATOR ', ') AS nomes_enfermeiros,
         
-        -- Concatena a localização completa do leito
         CONCAT(
             'Bloco ', cl.Bloco_Leito, 
             ', Anexo ', cl.Anexo_Leito, 
@@ -961,11 +1276,11 @@ app.get('/api/admin/buscar-alocacoes-leitos', async (req, res) => {
         DATE_FORMAT(cl.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
         DATE_FORMAT(cl.Data_Saida, '%d/%m/%Y %H:%i') AS data_saida_formatada,
         
-        -- Coluna de status para saber se a alocação está ativa
         CASE
             WHEN cl.Data_Saida IS NULL THEN 'ATIVO'
             ELSE 'FINALIZADO'
         END AS status_alocacao
+
       FROM 
         hospital.cuida_leito cl
       JOIN 
@@ -976,14 +1291,19 @@ app.get('/api/admin/buscar-alocacoes-leitos', async (req, res) => {
                            cl.Andar_Leito = l.Andar_Leito AND 
                            cl.N_Sala_Leito = l.N_Sala AND 
                            cl.N_Leito = l.N_Leito
+      
       WHERE
-        -- Busca por nome do enfermeiro, CPF ou número do leito
         CONCAT(u.primeiro_nome, ' ', u.sobrenome) LIKE ? OR
         cl.CPF_E LIKE ? OR
         cl.N_Leito LIKE ?
+
+      GROUP BY 
+        cl.Bloco_Leito, cl.Anexo_Leito, cl.Andar_Leito, cl.N_Sala_Leito, cl.N_Leito, 
+        cl.Data_Entrada, cl.Data_Saida, l.Ocupado
+
       ORDER BY 
-        cl.Data_Saida IS NULL DESC, -- Mostra ativos primeiro
-        cl.Data_Entrada DESC;      -- Depois os mais recentes
+        cl.Data_Saida IS NULL DESC,
+        cl.Data_Entrada DESC;
     `;
     
     const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
@@ -1094,6 +1414,698 @@ app.post('/api/paciente/marcar-consulta', authenticateToken, async (req, res) =>
       connection.release();
     }
   }
+});
+
+app.get('/api/meus-dados', authenticateToken, async (req, res) => {
+  const cpf = req.user.cpf;
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const query = `
+      SELECT 
+        u.cpf, u.email, u.genero, u.data_nascimento, 
+        u.primeiro_nome, u.sobrenome, 
+        u.rua, u.cidade, u.bairro, u.numero, u.cep,
+        (SELECT N_Telefone FROM hospital.telefone WHERE cpf = u.cpf LIMIT 1) as telefone
+      FROM hospital.usuario u
+      WHERE u.cpf = ?
+    `;
+    
+    const [rows] = await connection.execute(query, [cpf]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error('Erro ao buscar meus dados:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/meus-dados/atualizar', authenticateToken, async (req, res) => {
+  const cpf = req.user.cpf;
+  const { rua, numero, bairro, cidade, cep, estado, telefone } = req.body;
+
+  if (!rua || !numero || !bairro || !cidade || !cep || !telefone) {
+    return res.status(400).json({ message: 'Preencha todos os campos editáveis.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    const queryUsuario = `
+      UPDATE hospital.usuario 
+      SET rua = ?, numero = ?, bairro = ?, cidade = ?, cep = ?
+      WHERE cpf = ?
+    `;
+    await connection.execute(queryUsuario, [rua, numero, bairro, cidade, cep, cpf]);
+
+    await connection.execute('DELETE FROM hospital.telefone WHERE cpf = ?', [cpf]);
+    await connection.execute('INSERT INTO hospital.telefone (cpf, N_Telefone) VALUES (?, ?)', [cpf, telefone]);
+
+    await connection.commit();
+    res.status(200).json({ message: 'Dados atualizados com sucesso!' });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error('Erro ao atualizar dados:', error);
+    res.status(500).json({ message: 'Erro ao atualizar dados.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/admin/localizacoes', authenticateToken, async (req, res) => {
+  const { busca } = req.query; 
+  const searchTerm = busca ? `%${busca}%` : '%%'; 
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT Bloco, Anexo, Andar
+      FROM hospital.localizacao
+      WHERE Bloco LIKE ? OR Anexo LIKE ?
+      ORDER BY Bloco, Anexo, Andar;
+    `;
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm]);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar localizações:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/admin/localizacoes/cadastrar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar } = req.body;
+
+  if (!bloco || !anexo || !andar) {
+    return res.status(400).json({ message: 'Todos os campos (Bloco, Anexo, Andar) são obrigatórios.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `INSERT INTO hospital.localizacao (Bloco, Anexo, Andar) VALUES (?, ?, ?)`;
+    
+    await connection.execute(query, [bloco, anexo, andar]);
+    res.status(201).json({ message: 'Localização cadastrada com sucesso!' });
+
+  } catch (error) {
+    console.error('Erro ao cadastrar localização:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Esta localização já existe.' });
+    }
+    res.status(500).json({ message: 'Erro interno ao cadastrar.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/admin/localizacoes/deletar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar } = req.body;
+
+  if (!bloco || !anexo || !andar) {
+    return res.status(400).json({ message: 'Dados incompletos para exclusão.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `DELETE FROM hospital.localizacao WHERE Bloco = ? AND Anexo = ? AND Andar = ?`;
+    
+    const [result] = await connection.execute(query, [bloco, anexo, andar]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Localização excluída com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Localização não encontrada.' });
+    }
+
+  } catch (error) {
+    console.error('Erro ao excluir localização:', error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_ROW_IS_REFERENCED') {
+        return res.status(409).json({ message: 'Não é possível excluir: Existem salas, leitos ou consultórios vinculados a esta localização.' });
+    }
+    res.status(500).json({ message: 'Erro interno ao tentar excluir.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/admin/buscar-consultorios', authenticateToken, async (req, res) => {
+  const { busca } = req.query;
+  const searchTerm = busca ? `%${busca}%` : '%%';
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT Bloco, Anexo, Andar, Numero, Especialidade
+      FROM hospital.consultorio
+      WHERE Numero LIKE ? OR Especialidade LIKE ? OR Bloco LIKE ?
+      ORDER BY Bloco, Andar, Numero;
+    `;
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar consultórios:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/admin/consultorios/cadastrar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar, numero, especialidade } = req.body;
+
+  if (!bloco || !anexo || !andar || !numero) {
+    return res.status(400).json({ message: 'Localização e Número são obrigatórios.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      INSERT INTO hospital.consultorio (Bloco, Anexo, Andar, Numero, Especialidade)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    await connection.execute(query, [bloco, anexo, andar, numero, especialidade || null]);
+    res.status(201).json({ message: 'Consultório cadastrado com sucesso!' });
+
+  } catch (error) {
+    console.error('Erro ao cadastrar consultório:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'Este consultório já existe nesta localização.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/admin/consultorios/deletar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar, numero } = req.body;
+
+  if (!bloco || !anexo || !andar || !numero) {
+    return res.status(400).json({ message: 'Dados incompletos para exclusão.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `DELETE FROM hospital.consultorio WHERE Bloco = ? AND Anexo = ? AND Andar = ? AND Numero = ?`;
+    const [result] = await connection.execute(query, [bloco, anexo, andar, numero]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Consultório excluído com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Consultório não encontrado.' });
+    }
+  } catch (error) {
+    console.error('Erro ao excluir consultório:', error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({ message: 'Não é possível excluir: Existem consultas ou alocações vinculadas.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/admin/buscar-salas-cirurgia', authenticateToken, async (req, res) => {
+  const { busca } = req.query;
+  const searchTerm = busca ? `%${busca}%` : '%%';
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT Bloco, Anexo, Andar, N_Sala, Capacidade
+      FROM hospital.sala_cirurgia
+      WHERE N_Sala LIKE ? OR Bloco LIKE ?
+      ORDER BY Bloco, Andar, N_Sala;
+    `;
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm]);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar salas de cirurgia:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/admin/salas-cirurgia/cadastrar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar, numero, capacidade } = req.body;
+
+  if (!bloco || !anexo || !andar || !numero || !capacidade) {
+    return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      INSERT INTO hospital.sala_cirurgia (Bloco, Anexo, Andar, N_Sala, Capacidade)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    await connection.execute(query, [bloco, anexo, andar, numero, capacidade]);
+    res.status(201).json({ message: 'Sala de cirurgia cadastrada com sucesso!' });
+
+  } catch (error) {
+    console.error('Erro ao cadastrar sala de cirurgia:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'Esta sala já existe.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/admin/salas-cirurgia/deletar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar, numero } = req.body;
+
+  if (!bloco || !numero) {
+    return res.status(400).json({ message: 'Dados incompletos para exclusão.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `DELETE FROM hospital.sala_cirurgia WHERE Bloco = ? AND Anexo = ? AND Andar = ? AND N_Sala = ?`;
+    const [result] = await connection.execute(query, [bloco, anexo, andar, numero]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Sala excluída com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Sala não encontrada.' });
+    }
+  } catch (error) {
+    console.error('Erro ao excluir sala:', error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({ message: 'Não é possível excluir: Existem cirurgias vinculadas a esta sala.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/admin/buscar-salas-leito', authenticateToken, async (req, res) => {
+  const { busca } = req.query;
+  const searchTerm = busca ? `%${busca}%` : '%%';
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT Bloco, Anexo, Andar, N_Sala, Tipo_Leito
+      FROM hospital.sala_leito
+      WHERE N_Sala LIKE ? OR Tipo_Leito LIKE ? OR Bloco LIKE ?
+      ORDER BY Bloco, Andar, N_Sala;
+    `;
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar salas de leito:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/admin/salas-leito/cadastrar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar, numero, tipo_leito } = req.body;
+
+  if (!bloco || !anexo || !andar || !numero || !tipo_leito) {
+    return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      INSERT INTO hospital.sala_leito (Bloco, Anexo, Andar, N_Sala, Tipo_Leito)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    await connection.execute(query, [bloco, anexo, andar, numero, tipo_leito]);
+    res.status(201).json({ message: 'Sala de leito cadastrada com sucesso!' });
+
+  } catch (error) {
+    console.error('Erro ao cadastrar sala de leito:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'Esta sala de leito já existe nesta localização.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/admin/salas-leito/deletar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar, numero } = req.body;
+
+  if (!bloco || !anexo || !andar || !numero) {
+    return res.status(400).json({ message: 'Dados incompletos para exclusão.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `DELETE FROM hospital.sala_leito WHERE Bloco = ? AND Anexo = ? AND Andar = ? AND N_Sala = ?`;
+    const [result] = await connection.execute(query, [bloco, anexo, andar, numero]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Sala de leito excluída com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Sala de leito não encontrada.' });
+    }
+  } catch (error) {
+    console.error('Erro ao excluir sala de leito:', error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({ message: 'Não é possível excluir: Existem leitos vinculados a esta sala.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/admin/buscar-leitos', authenticateToken, async (req, res) => {
+  const { busca } = req.query;
+  const searchTerm = busca ? `%${busca}%` : '%%';
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      SELECT 
+        l.Bloco_Leito, l.Anexo_Leito, l.Andar_Leito, l.N_Sala, l.N_Leito, l.Ocupado,
+        sl.Tipo_Leito
+      FROM hospital.leito l
+      JOIN hospital.sala_leito sl ON 
+        l.Bloco_Leito = sl.Bloco AND 
+        l.Anexo_Leito = sl.Anexo AND 
+        l.Andar_Leito = sl.Andar AND 
+        l.N_Sala = sl.N_Sala
+      WHERE l.N_Leito LIKE ? OR sl.Tipo_Leito LIKE ? OR l.Bloco_Leito LIKE ?
+      ORDER BY l.Bloco_Leito, l.N_Sala, l.N_Leito;
+    `;
+    const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Erro ao buscar leitos:', error);
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/admin/leitos/cadastrar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar, n_sala, n_leito } = req.body;
+
+  if (!bloco || !anexo || !andar || !n_sala || !n_leito) {
+    return res.status(400).json({ message: 'Selecione uma sala e informe o número do leito.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      INSERT INTO hospital.leito (Bloco_Leito, Anexo_Leito, Andar_Leito, N_Sala, N_Leito, Ocupado)
+      VALUES (?, ?, ?, ?, ?, 0)
+    `;
+    await connection.execute(query, [bloco, anexo, andar, n_sala, n_leito]);
+    res.status(201).json({ message: 'Leito cadastrado com sucesso!' });
+
+  } catch (error) {
+    console.error('Erro ao cadastrar leito:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'Este leito já existe nesta sala.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/admin/leitos/deletar', authenticateToken, async (req, res) => {
+  const { bloco, anexo, andar, n_sala, n_leito } = req.body;
+
+  if (!bloco || !n_sala || !n_leito) {
+    return res.status(400).json({ message: 'Dados incompletos para exclusão.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const query = `
+      DELETE FROM hospital.leito 
+      WHERE Bloco_Leito = ? AND Anexo_Leito = ? AND Andar_Leito = ? AND N_Sala = ? AND N_Leito = ?
+    `;
+    const [result] = await connection.execute(query, [bloco, anexo, andar, n_sala, n_leito]);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Leito excluído com sucesso!' });
+    } else {
+      res.status(404).json({ message: 'Leito não encontrado.' });
+    }
+  } catch (error) {
+    console.error('Erro ao excluir leito:', error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+         return res.status(409).json({ message: 'Não é possível excluir: Existem registros vinculados a este leito.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/admin/alocar-enfermeiro-leito', authenticateToken, async (req, res) => {
+  const { cpf_e, bloco, anexo, andar, n_sala, n_leito, data_entrada, data_saida } = req.body;
+
+  if (!cpf_e || !bloco || !n_leito || !data_entrada || !data_saida) {
+    return res.status(400).json({ message: 'Todos os dados são obrigatórios.' });
+  }
+
+  const novaEntrada = new Date(data_entrada);
+  const novaSaida = new Date(data_saida);
+
+  const diffHoras = (novaSaida - novaEntrada) / 1000 / 60 / 60;
+  if (diffHoras <= 0) return res.status(400).json({ message: 'Data de saída deve ser após a entrada.' });
+  if (diffHoras > 12) return res.status(400).json({ message: 'Um único alocamento não pode exceder 12h.' });
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+
+    const queryCirurgiaOverlap = `
+        SELECT c.Numero 
+        FROM hospital.enfermeiro_participa_cirurgia epc
+        JOIN hospital.cirurgia c ON epc.Numero_Cirurgia = c.Numero AND epc.CPF_P = c.CPF_P
+        WHERE epc.CPF_E = ?
+          AND (
+            (c.Data_Finalizacao IS NULL) 
+            OR
+            (c.Data_Entrada < ? AND c.Data_Finalizacao > ?) 
+          )
+        LIMIT 1
+    `;
+    
+    const [cirurgiasConflitantes] = await connection.execute(queryCirurgiaOverlap, [cpf_e, data_saida, data_entrada]);
+
+    if (cirurgiasConflitantes.length > 0) {
+        return res.status(409).json({ message: 'Conflito Crítico: O enfermeiro está alocado em uma CIRURGIA neste horário. Cirurgias exigem exclusividade.' });
+    }
+
+    const horasJanela = 60;
+    const dataLimiteBusca = new Date(novaEntrada.getTime() - (horasJanela * 60 * 60 * 1000));
+
+    const queryHistorico = `
+      SELECT Data_Entrada, Data_Saida FROM hospital.cuida_leito 
+      WHERE CPF_E = ? AND Data_Saida > ?
+      UNION ALL
+      SELECT c.Data_Entrada, c.Data_Finalizacao as Data_Saida
+      FROM hospital.enfermeiro_participa_cirurgia epc
+      JOIN hospital.cirurgia c ON epc.Numero_Cirurgia = c.Numero AND epc.CPF_P = c.CPF_P
+      WHERE epc.CPF_E = ? AND c.Data_Finalizacao > ?
+      ORDER BY Data_Entrada ASC
+    `;
+
+    const [historico] = await connection.execute(queryHistorico, [cpf_e, dataLimiteBusca, cpf_e, dataLimiteBusca]);
+
+    const TOLERANCIA_CONTINUIDADE_HORAS = 4; 
+    
+    let inicioPlantaoAtual = novaEntrada;
+    let fimPlantaoAtual = novaSaida;
+    let ultimoFimPlantaoAnterior = null;
+
+    for (const registro of historico) {
+        const regEntrada = new Date(registro.Data_Entrada);
+        const regSaida = new Date(registro.Data_Saida);
+
+        const gapParaNovo = (novaEntrada - regSaida) / 36e5; 
+        const gapDoNovo = (regEntrada - novaSaida) / 36e5;
+
+        if ((gapParaNovo <= TOLERANCIA_CONTINUIDADE_HORAS && gapParaNovo >= -12) || 
+            (gapDoNovo <= TOLERANCIA_CONTINUIDADE_HORAS && gapDoNovo >= -12)) {
+            
+            if (regEntrada < inicioPlantaoAtual) inicioPlantaoAtual = regEntrada;
+            if (regSaida > fimPlantaoAtual) fimPlantaoAtual = regSaida;
+        } else {
+            if (regSaida < novaEntrada) {
+                if (!ultimoFimPlantaoAnterior || regSaida > ultimoFimPlantaoAnterior) {
+                    ultimoFimPlantaoAnterior = regSaida;
+                }
+            }
+        }
+    }
+
+    const duracaoTotal = (fimPlantaoAtual - inicioPlantaoAtual) / 36e5;
+    if (duracaoTotal > 12) {
+         return res.status(409).json({ 
+             message: `Regra de Jornada violada: Com esta alocação, a jornada contínua seria de ${duracaoTotal.toFixed(1)}h. O limite é 12h.` 
+         });
+    }
+
+    if (ultimoFimPlantaoAnterior) {
+        const horasDescanso = (inicioPlantaoAtual - ultimoFimPlantaoAnterior) / 36e5;
+        if (horasDescanso < 36) {
+             const dataLiberacao = new Date(ultimoFimPlantaoAnterior.getTime() + (36 * 36e5));
+             return res.status(409).json({ 
+                 message: `Regra 12x36 violada! Descanso insuficiente (${horasDescanso.toFixed(1)}h). Disponível apenas após: ${dataLiberacao.toLocaleString()}` 
+             });
+        }
+    }
+
+    const queryInsert = `
+      INSERT INTO hospital.cuida_leito 
+      (CPF_E, Bloco_Leito, Anexo_Leito, Andar_Leito, N_Sala_Leito, N_Leito, Data_Entrada, Data_Saida)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    await connection.execute(queryInsert, [
+      cpf_e, bloco, anexo, andar, n_sala, n_leito, data_entrada, data_saida
+    ]);
+
+    res.status(201).json({ message: 'Enfermeiro alocado com sucesso!' });
+
+  } catch (error) {
+    console.error('Erro ao alocar:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'Conflito: Enfermeiro já alocado neste leito e horário exato.' });
+    }
+    res.status(500).json({ message: 'Erro interno.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/enfermeiro/minhas-alocacoes-leitos', authenticateToken, async (req, res) => {
+    if (!req.user.eh_enfermeiro) {
+        return res.status(403).json({ message: 'Acesso exclusivo para enfermeiros.' });
+    }
+
+    const { busca } = req.query;
+    const searchTerm = busca ? `%${busca}%` : '%%';
+    const cpfEnfermeiro = req.user.cpf;
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        const query = `
+          SELECT 
+            cl.CPF_E as cpfs_enfermeiros,
+            CONCAT(u.primeiro_nome, ' ', u.sobrenome) AS nomes_enfermeiros,
+            
+            CONCAT('Bloco ', cl.Bloco_Leito, ', Anexo ', cl.Anexo_Leito, ', Andar ', cl.Andar_Leito, ', Sala ', cl.N_Sala_Leito, ', Leito ', cl.N_Leito) AS localizacao_leito,
+            
+            cl.Bloco_Leito, cl.Anexo_Leito, cl.Andar_Leito, cl.N_Sala_Leito, cl.N_Leito,
+            
+            l.Ocupado AS leito_ocupado,
+            DATE_FORMAT(cl.Data_Entrada, '%d/%m/%Y %H:%i') AS data_entrada_formatada,
+            cl.Data_Entrada, 
+            DATE_FORMAT(cl.Data_Saida, '%d/%m/%Y %H:%i') AS data_saida_formatada,
+            
+            CASE
+                WHEN cl.Data_Saida IS NULL THEN 'ATIVO'
+                ELSE 'FINALIZADO'
+            END AS status_alocacao
+
+          FROM hospital.cuida_leito cl
+          JOIN hospital.usuario u ON cl.CPF_E = u.cpf
+          LEFT JOIN hospital.leito l ON cl.Bloco_Leito = l.Bloco_Leito AND cl.N_Leito = l.N_Leito
+          
+          WHERE
+            cl.CPF_E = ? AND
+            (cl.N_Leito LIKE ? OR cl.Bloco_Leito LIKE ?)
+
+          ORDER BY cl.Data_Entrada DESC;
+        `;
+        
+        const [rows] = await connection.execute(query, [cpfEnfermeiro, searchTerm, searchTerm]);
+        res.status(200).json(rows);
+
+    } catch (error) {
+        console.error('Erro ao buscar minhas alocações:', error);
+        res.status(500).json({ message: 'Erro interno.' });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+app.delete('/api/admin/desalocar-enfermeiro-leito', authenticateToken, async (req, res) => {
+    if (!req.user.eh_admin) {
+        return res.status(403).json({ message: 'Apenas administradores podem excluir alocações.' });
+    }
+
+    const { cpf_e, bloco, anexo, andar, n_sala, n_leito, data_entrada } = req.body;
+
+    if (!cpf_e || !bloco || !n_leito || !data_entrada) {
+        return res.status(400).json({ message: 'Dados incompletos para exclusão.' });
+    }
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        const query = `
+            DELETE FROM hospital.cuida_leito 
+            WHERE CPF_E = ? AND Bloco_Leito = ? AND Anexo_Leito = ? 
+              AND Andar_Leito = ? AND N_Sala_Leito = ? AND N_Leito = ? 
+              AND Data_Entrada = ?
+        `;
+        
+        const dataEntradaSQL = new Date(data_entrada).toISOString().slice(0, 19).replace('T', ' ');
+
+        const [result] = await connection.execute(query, [
+            cpf_e, bloco, anexo, andar, n_sala, n_leito, dataEntradaSQL
+        ]);
+
+        if (result.affectedRows > 0) {
+            res.status(200).json({ message: 'Alocação removida com sucesso.' });
+        } else {
+            res.status(404).json({ message: 'Alocação não encontrada. Verifique os dados.' });
+        }
+
+    } catch (error) {
+        console.error('Erro ao desalocar:', error);
+        res.status(500).json({ message: 'Erro interno.' });
+    } finally {
+        if (connection) connection.release();
+    }
 });
 
 app.listen(port, () => {

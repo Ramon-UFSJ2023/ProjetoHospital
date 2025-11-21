@@ -18,7 +18,6 @@ const getSessionData = () => {
   }
 };
 
-
 const getUserHomePage = (user) => {
   if (!user) return '/'; 
   if (user.eh_admin) return '/page-func-adm';
@@ -36,16 +35,19 @@ export default function ProtectedRoute({ children, requiredRoles = [] }) {
   let isAuthorized = false;
 
   if (isAuthenticated) {
-
-    isAuthorized = requiredRoles.some(role => {
-      if (role === 'paciente') return user.eh_paciente;
-      if (role === 'medico') return user.eh_medico;
-      if (role === 'enfermeiro') return user.eh_enfermeiro;
-      if (role === 'admin') return user.eh_admin;
-      if (role === 'funcionario') return user.eh_funcionario; 
-      
-      return false; 
-    });
+    if (requiredRoles.length === 0) {
+      isAuthorized = true;
+    } else {
+      isAuthorized = requiredRoles.some(role => {
+        if (role === 'paciente') return user.eh_paciente;
+        if (role === 'medico') return user.eh_medico;
+        if (role === 'enfermeiro') return user.eh_enfermeiro;
+        if (role === 'admin') return user.eh_admin;
+        if (role === 'funcionario') return user.eh_funcionario; 
+        
+        return false; 
+      });
+    }
   }
 
   useEffect(() => {
@@ -67,4 +69,3 @@ export default function ProtectedRoute({ children, requiredRoles = [] }) {
 
   return null; 
 }
-

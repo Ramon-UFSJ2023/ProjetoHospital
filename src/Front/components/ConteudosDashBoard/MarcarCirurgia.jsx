@@ -6,6 +6,7 @@ import { ptBR } from 'date-fns/locale';
 import BtnCustomized from "../Buttons/ButtonCustomized";
 import Select from 'react-select';
 import CurrencyInput from "react-currency-input-field";
+import { useLocation } from "react-router-dom";
 
 export default function MarcarCirurgia() {
   const [pacientes, setPacientes] = useState([]);
@@ -27,6 +28,9 @@ export default function MarcarCirurgia() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState("");
 
+  const location = useLocation();
+  const isMedicoPage = location.pathname.includes('/page-medico');
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
@@ -35,6 +39,17 @@ export default function MarcarCirurgia() {
         setToken(storedToken);
     }
   }, []);
+
+  useEffect(() => {
+    if (user && user.eh_medico && medicos.length > 0) {
+        if (isMedicoPage || !user.eh_admin) {
+            const medicoLogado = medicos.find(m => m.value === user.cpf);
+            if (medicoLogado) {
+                setMedicoSelecionado(medicoLogado);
+            }
+        }
+    }
+  }, [user, medicos, isMedicoPage]);
 
   useEffect(() => {
     if (!token) return;
@@ -51,7 +66,7 @@ export default function MarcarCirurgia() {
     }).then(res => res.json()).then(data => {
         const options = data.map(s => ({ 
             value: { bloco: s.Bloco, anexo: s.Anexo, andar: s.Andar, numero: s.N_Sala }, 
-            label: `Bloco ${s.Bloco} - Sala ${s.N_Sala} (Cap: ${s.Capacidade})` 
+            label: `Bloco ${s.Bloco} - Anexo ${s.Anexo} - Andar ${s.Andar} - Sala ${s.N_Sala} (Cap: ${s.Capacidade})` 
         }));
         setSalas(options);
     });
@@ -98,7 +113,9 @@ export default function MarcarCirurgia() {
         return;
     }
     
-    if (user.eh_admin && !medicoSelecionado) {
+    const isAdminMode = user.eh_admin && !isMedicoPage;
+    
+    if (isAdminMode && !medicoSelecionado) {
         alert("Administradores devem selecionar um médico responsável.");
         return;
     }
@@ -111,7 +128,7 @@ export default function MarcarCirurgia() {
         enfermeiros: enfermeirosSelecionados.map(e => e.value),
         n_tuss: nTuss,
         valor: valor ? parseFloat(valor.replace(',', '.')) : 0.0,
-        medico_responsavel: user.eh_admin ? medicoSelecionado.value : null 
+        medico_responsavel: medicoSelecionado ? medicoSelecionado.value : null 
     };
 
     try {
@@ -133,6 +150,8 @@ export default function MarcarCirurgia() {
             setEnfermeirosSelecionados([]);
             setNTuss("");
             setValor("");
+            
+        if (isAdminMode) setMedicoSelecionado(null);
         } else {
             alert(data.message || "Erro ao marcar cirurgia.");
         }
@@ -161,7 +180,7 @@ export default function MarcarCirurgia() {
                         />
                     </div>
 
-                    {user && user.eh_admin && (
+                    {user && (user.eh_admin || user.eh_medico) && (
                          <div className="input-groups-CadFun">
                             <label>Médico Responsável</label>
                             <Select 
@@ -169,6 +188,7 @@ export default function MarcarCirurgia() {
                                 value={medicoSelecionado} 
                                 onChange={setMedicoSelecionado}
                                 placeholder="Selecione o médico..."
+                                isDisabled={!user.eh_admin || isMedicoPage} 
                             />
                         </div>
                     )}

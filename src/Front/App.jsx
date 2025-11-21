@@ -10,6 +10,7 @@ import { Routes, Route } from "react-router-dom";
 import "./styles/global.css";
 import ProtectedRoute from "./components/ProtectedRoute"; 
 import EscolherPerfil from "./pages/EscolherPerfil"; 
+import ConfiguracoesConta from "./pages/ConfiguracoesConta";
 
 export default function App() {
   return (
@@ -64,6 +65,15 @@ export default function App() {
         } 
       />
       
+      <Route 
+        path="/configuracoes-conta"
+        element={
+          <ProtectedRoute>
+            <ConfiguracoesConta />
+          </ProtectedRoute>
+        }
+      />
+
     </Routes>
   );
 }

@@ -1,29 +1,32 @@
 import "./dashboardFunAdm.css";
-// import GerenciasCadastroAdm from "../ConteudosDashBoard/GerenciasCadastroFunByAdm";
-// import CadastroSala from "../ConteudosDashBoard/CadastroDeSalas";
-// import ListaPacientes from "../ConteudosDashBoard/ListaPacientes";
-// import ListaFuncionario from "../ConteudosDashBoard/ListaFuncionario.jsx";
 import ListaConsultas from "../ConteudosDashBoard/ListaConsultas.jsx";
 import ListaCirurgias from "../ConteudosDashBoard/ListaCirurgias.jsx";
 import MarcarConsulta from "../ConteudosDashBoard/MarcarConsulta.jsx"; 
-// import AlocacaoConsultorios from "../ConteudosDashBoard/AlocacaoConsultorios.jsx";
-
+import MarcarCirurgia from "../ConteudosDashBoard/MarcarCirurgia.jsx"; 
 import PropTypes from "prop-types";
 
 export default function DashBoardPaciente({ stateNow, itens, onNavigateClick = () => {} }) {
   const rendCont = () => {
     switch (stateNow) {
-        case itens[0].label:
+        case "Consultas": 
+             return <ListaConsultas onNavigateClick={onNavigateClick} />;
+        
+        case itens[0].label: 
             return <ListaConsultas onNavigateClick={onNavigateClick} />;
 
-        case itens[1].label:
+        case "Cirurgias":
             return <ListaCirurgias />;
 
-        case itens[2].label:
+        case "Marcar Consulta":
             return <MarcarConsulta />;
 
+        case "Marcar Cirurgia": 
+            return <MarcarCirurgia />;
+
         default:
-            return <h1>teste</h1>;
+             if(stateNow === itens[1]?.label) return <ListaCirurgias />;
+             if(stateNow === itens[2]?.label) return <MarcarConsulta />;
+             return <h1>Selecione uma opção</h1>;
     }
   };
 

@@ -40,7 +40,7 @@ export default function UpperBar({ items, onMenuItemClick = () => {} }) {
     const selectedValue = event.target.value;
 
     if (selectedValue === "config") {
-      console.log("Usuário selecionou: Configurações de conta");
+      navigate('/configuracoes-conta');
     } else if (selectedValue === "sair") {
       console.log("Usuário selecionou: Sair");
       logout(); 
@@ -65,10 +65,9 @@ export default function UpperBar({ items, onMenuItemClick = () => {} }) {
         <select
           className="profile-select"
           onChange={handleProfileChange}
-          value="conta" // Força o valor 'conta' para mostrar o nome como label principal
+          value="conta" 
         >
           <option value="conta" disabled hidden> 
-            {/* Mostra o nome do usuário aqui */}
             {userName}
           </option>
           <option value="config">Configurações de conta</option>

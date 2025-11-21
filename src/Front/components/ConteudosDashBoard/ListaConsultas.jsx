@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
-// Correção: Garantindo que o caminho para o CSS está correto baseado na estrutura de arquivos enviada
 import "./style/listaPaciente.css"; 
-// Correção: Ajustando o caminho para o componente de botão
 import BtnCustomized from "../Buttons/ButtonCustomized.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -16,14 +14,13 @@ const formatarMoeda = (valor) => {
 export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [resultados, setResultados] = useState([]);
-  
-  // Estado para controlar qual consulta foi clicada (Modal)
+
   const [consultaSelecionada, setConsultaSelecionada] = useState(null);
   
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const navigate = useNavigate();
-  const location = useLocation(); // Hook para pegar a rota atual
+  const location = useLocation();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -45,7 +42,6 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
     
     const isMedicoPage = location.pathname.includes('/page-medico');
 
-    // Lógica de definição da rota da API
     if (user.eh_medico && isMedicoPage) {
       baseUrl = `http://localhost:3001/api/medico/minhas-consultas`;
     } else if (user.eh_admin) {
@@ -144,7 +140,6 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
     }
   };
 
-  // Lógica de visualização condicional
   const isMedicoPage = location.pathname.includes('/page-medico');
   const showPatientColumn = user?.eh_admin || (user?.eh_medico && isMedicoPage);
 
@@ -156,7 +151,6 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
   return (
     <div className="container-conteudo-admin">
       
-      {/* --- MODAL DE DETALHES --- */}
       {consultaSelecionada && (
         <div className="modal-overlay" onClick={fecharDetalhes}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -166,7 +160,6 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
             <div className="modal-body">
               <p><strong>Número:</strong> {consultaSelecionada.Numero}</p>
               
-              {/* Exibe Paciente se for Admin ou Médico na área dele */}
               {showPatientColumn && (
                  <p><strong>Paciente:</strong> {consultaSelecionada.nome_paciente} (CPF: {consultaSelecionada.CPF_P})</p>
               )}
@@ -243,7 +236,6 @@ export default function GerenciarBuscaConsulta({ onNavigateClick = () => {} }) {
         <table className="tabela-resultados">
           <thead>
             <tr>
-              {/* Cabeçalho condicional */}
               {showPatientColumn && <th>Paciente</th>} 
               <th>Médico</th>
               <th>Data e Hora</th>

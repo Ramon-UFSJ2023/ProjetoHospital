@@ -40,9 +40,12 @@ export default function GerenciarBuscaCirurgia() {
 
     let baseUrl = '';
     const isMedicoPage = location.pathname.includes('/page-medico');
-
+    const isEnfermeiroPage = location.pathname.includes('/page-enfermeiro'); 
+    
     if (user.eh_medico && isMedicoPage) {
       baseUrl = `http://localhost:3001/api/medico/minhas-cirurgias`;
+    } else if (user.eh_enfermeiro && isEnfermeiroPage) {
+      baseUrl = `http://localhost:3001/api/enfermeiro/minhas-cirurgias`; 
     } else if (user.eh_admin) {
       baseUrl = `http://localhost:3001/api/admin/buscar-cirurgias`;
     } else {
@@ -134,11 +137,13 @@ export default function GerenciarBuscaCirurgia() {
   };
 
   const isMedicoPage = location.pathname.includes('/page-medico');
-  const showPatientColumn = user?.eh_admin || (user?.eh_medico && isMedicoPage);
+  const isEnfermeiroPage = location.pathname.includes('/page-enfermeiro');
+  
+  const showPatientColumn = user?.eh_admin || (user?.eh_medico && isMedicoPage) || (user?.eh_enfermeiro && isEnfermeiroPage);
 
   const placeholder = user?.eh_admin 
     ? "Buscar por Paciente, Médico(s) ou CPF..."
-    : (isMedicoPage ? "Buscar por Paciente..." : "Buscar por Médico(s)...");
+    : (isMedicoPage || isEnfermeiroPage ? "Buscar por Paciente ou Médico..." : "Buscar por Médico(s)...");
 
   return (
     <div className="container-conteudo-admin">
@@ -155,6 +160,8 @@ export default function GerenciarBuscaCirurgia() {
                  <p><strong>Paciente:</strong> {cirurgiaSelecionada.nome_paciente} (CPF: {cirurgiaSelecionada.CPF_P})</p>
               )}
               <p><strong>Médicos Responsáveis:</strong> {cirurgiaSelecionada.medicos || 'Nenhum atribuído'}</p>
+              <p><strong>Enfermeiros:</strong> {cirurgiaSelecionada.enfermeiros || 'Nenhum atribuído'}</p>
+              
               <hr style={{ margin: '10px 0', borderColor: '#feeded' }}/>
               
               <p><strong>Data Entrada:</strong> {cirurgiaSelecionada.data_entrada_formatada}</p>
