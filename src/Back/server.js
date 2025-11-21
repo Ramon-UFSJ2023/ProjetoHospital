@@ -199,7 +199,6 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
   try {
     connection = await pool.getConnection();
     await connection.beginTransaction();
-
     const queryUsuario = `
       INSERT INTO hospital.usuario 
       (cpf, email, senha, genero, data_nascimento, primeiro_nome, sobrenome, rua, cidade, bairro, numero, cep)
@@ -219,6 +218,9 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
     
     } else if (typeCad === 'medico' || typeCad === 'enfermeiro' || typeCad === 'funcionario') { 
       
+      const queryPacienteFunc = 'INSERT IGNORE INTO hospital.paciente (cpf) VALUES (?)';
+      await connection.execute(queryPacienteFunc, [cpf]);
+
       const queryFuncionario = `
         INSERT INTO hospital.funcionario (cpf, Salario, Eh_admin, Eh_Conselho, Carga_Horaria)
         VALUES (?, ?, ?, ?, ?)
@@ -232,8 +234,10 @@ app.post('/api/admin/cadastro-geral', async (req, res) => {
           await connection.rollback(); 
           return res.status(400).json({ message: 'CRM e Especialidade são obrigatórios para Médicos.' });
         }
-        const queryMedico = 'INSERT INTO hospital.medico (cpf, CRM, Especialidade) VALUES (?, ?, ?)';
-        await connection.execute(queryMedico, [cpf, crm, especialidade]);
+        await connection.execute('INSERT IGNORE INTO hospital.especialidade (Nome) VALUES (?)', [especialidade]);
+        
+        const queryMedicoEsp = 'INSERT INTO hospital.medico_especialidade (CPF_M, Especialidade) VALUES (?, ?)';
+        await connection.execute(queryMedicoEsp, [cpf, especialidade]);
       
       } else if (typeCad === 'enfermeiro') {
         if (!cofen || !formacao) {
@@ -633,19 +637,52 @@ app.delete('/api/consulta/deletar', authenticateToken, async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
-    
-    const query = `DELETE FROM hospital.consulta WHERE CPF_P = ? AND Numero = ?`;
-    
-    const [result] = await connection.execute(query, [cpf_p, numero]);
+    await connection.beginTransaction();
 
-    if (result.affectedRows > 0) {
-      res.status(200).json({ message: 'Consulta excluída com sucesso!' });
-    } else {
-      res.status(404).json({ message: 'Consulta não encontrada para exclusão.' });
+    const [rows] = await connection.execute(
+      'SELECT Codigo_Internacao FROM hospital.consulta WHERE CPF_P = ? AND Numero = ?', 
+      [cpf_p, numero]
+    );
+
+    if (rows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Consulta não encontrada.' });
     }
 
+    const codigoInternacao = rows[0].Codigo_Internacao;
+
+    await connection.execute(
+      'DELETE FROM hospital.consulta WHERE CPF_P = ? AND Numero = ?', 
+      [cpf_p, numero]
+    );
+
+    if (codigoInternacao) {
+      const [internacao] = await connection.execute(
+        'SELECT * FROM hospital.internacao WHERE Codigo = ?', 
+        [codigoInternacao]
+      );
+
+      if (internacao.length > 0) {
+        const i = internacao[0];
+        
+        await connection.execute(
+          `UPDATE hospital.leito 
+           SET Ocupado = 0 
+           WHERE Bloco_Leito = ? AND Anexo_Leito = ? AND Andar_Leito = ? AND N_Sala = ? AND N_Leito = ?`,
+          [i.Bloco_Leito, i.Anexo_Leito, i.Andar_Leito, i.N_Sala_Leito, i.N_Leito]
+        );
+
+        await connection.execute('DELETE FROM hospital.internacao WHERE Codigo = ?', [codigoInternacao]);
+      }
+    }
+
+    await connection.commit();
+    res.status(200).json({ message: 'Consulta excluída com sucesso!' });
+
   } catch (error) {
+    if (connection) await connection.rollback();
     console.error('Erro ao excluir consulta:', error);
+    
     if (error.code === 'ER_ROW_IS_REFERENCED_2') {
         return res.status(409).json({ message: 'Não é possível excluir: existem registros dependentes desta consulta.' });
     }
@@ -681,9 +718,10 @@ app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
         CONCAT('Bloco ', c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Andar ', c.Andar_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
         
         c.N_Tuss,
+        
         CASE 
-            WHEN c.Bloco_Leito IS NOT NULL THEN 
-                CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
+            WHEN i.Codigo IS NOT NULL THEN 
+                CONCAT('Bloco ', i.Bloco_Leito,' / Anexo ', i.Anexo_Leito, ' / Andar ', i.Andar_Leito, ' / Sala ', i.N_Sala_Leito, ' / Leito ', i.N_Leito)
             ELSE NULL 
         END AS localizacao_leito,
 
@@ -693,6 +731,10 @@ app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
         hospital.cirurgia c
       JOIN 
         hospital.usuario up ON c.CPF_P = up.cpf
+      
+      LEFT JOIN 
+        hospital.internacao i ON c.Codigo_Internacao = i.Codigo
+
       LEFT JOIN 
         hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
       LEFT JOIN 
@@ -703,7 +745,7 @@ app.get('/api/admin/buscar-cirurgias', authenticateToken, async (req, res) => {
         hospital.usuario ue ON epc.CPF_E = ue.cpf
 
       GROUP BY
-        c.CPF_P, c.Numero
+        c.CPF_P, c.Numero, i.Codigo, i.Bloco_Leito, i.Anexo_Leito, i.Andar_Leito, i.N_Sala_Leito, i.N_Leito
       HAVING 
         nome_paciente LIKE ? OR
         c.CPF_P LIKE ? OR
@@ -748,17 +790,23 @@ app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) =>
             DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
             CONCAT(c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
             c.N_Tuss,
+            
             CASE 
-                WHEN c.Bloco_Leito IS NOT NULL THEN 
-                    CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
+                WHEN i.Codigo IS NOT NULL THEN 
+                    CONCAT('Bloco ', i.Bloco_Leito,' / Anexo ', i.Anexo_Leito, ' / Andar ', i.Andar_Leito, ' / Sala ', i.N_Sala_Leito, ' / Leito ', i.N_Leito)
                 ELSE NULL 
             END AS localizacao_leito,
+            
             c.Valor,
             c.Esta_Paga
           FROM 
             hospital.cirurgia c
           JOIN 
             hospital.usuario up ON c.CPF_P = up.cpf
+          
+          LEFT JOIN 
+            hospital.internacao i ON c.Codigo_Internacao = i.Codigo
+
           LEFT JOIN 
             hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
           LEFT JOIN 
@@ -767,12 +815,16 @@ app.get('/api/paciente/minhas-cirurgias', authenticateToken, async (req, res) =>
             hospital.enfermeiro_participa_cirurgia epc ON c.CPF_P = epc.CPF_P AND c.Numero = epc.Numero_Cirurgia
           LEFT JOIN 
             hospital.usuario ue ON epc.CPF_E = ue.cpf
+          
           WHERE
             c.CPF_P = ? 
+          
           GROUP BY
-            c.CPF_P, c.Numero
+            c.CPF_P, c.Numero, i.Codigo, i.Bloco_Leito, i.Anexo_Leito, i.Andar_Leito, i.N_Sala_Leito, i.N_Leito
+          
           HAVING 
             (medicos LIKE ?) OR (medicos IS NULL AND ? = '%%')
+          
           ORDER BY 
             c.Data_Entrada DESC;
         `;
@@ -810,19 +862,27 @@ app.get('/api/medico/minhas-cirurgias', authenticateToken, async (req, res) => {
             DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
             CONCAT('Bloco ', c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Andar ', c.Andar_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
             c.N_Tuss,
+            
             CASE 
-                WHEN c.Bloco_Leito IS NOT NULL THEN 
-                    CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
+                WHEN i.Codigo IS NOT NULL THEN 
+                    CONCAT('Bloco ', i.Bloco_Leito,' / Anexo ', i.Anexo_Leito, ' / Andar ', i.Andar_Leito, ' / Sala ', i.N_Sala_Leito, ' / Leito ', i.N_Leito)
                 ELSE NULL 
             END AS localizacao_leito,
+            
             c.Valor,
             c.Esta_Paga
           FROM 
             hospital.cirurgia c
+          
           JOIN 
             hospital.realiza r_filter ON c.CPF_P = r_filter.CPF_P AND c.Numero = r_filter.N_Cirurgia AND r_filter.CPF_M = ?
+          
           JOIN 
             hospital.usuario up ON c.CPF_P = up.cpf
+          
+          LEFT JOIN 
+            hospital.internacao i ON c.Codigo_Internacao = i.Codigo
+
           LEFT JOIN 
             hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
           LEFT JOIN 
@@ -831,10 +891,13 @@ app.get('/api/medico/minhas-cirurgias', authenticateToken, async (req, res) => {
             hospital.enfermeiro_participa_cirurgia epc ON c.CPF_P = epc.CPF_P AND c.Numero = epc.Numero_Cirurgia
           LEFT JOIN 
             hospital.usuario ue ON epc.CPF_E = ue.cpf
+          
           GROUP BY
-            c.CPF_P, c.Numero
+            c.CPF_P, c.Numero, i.Codigo, i.Bloco_Leito, i.Anexo_Leito, i.Andar_Leito, i.N_Sala_Leito, i.N_Leito
+          
           HAVING 
             (nome_paciente LIKE ? OR c.CPF_P LIKE ?)
+          
           ORDER BY 
             c.Data_Entrada DESC;
         `;
@@ -872,21 +935,26 @@ app.get('/api/enfermeiro/minhas-cirurgias', authenticateToken, async (req, res) 
             DATE_FORMAT(c.Data_Finalizacao, '%d/%m/%Y %H:%i') AS data_finalizacao_formatada,
             CONCAT('Bloco ', c.Bloco_Sala_Cirurgia, ' / Anexo ', c.Anexo_Sala_Cirurgia, ' / Andar ', c.Andar_Sala_Cirurgia, ' / Sala ', c.N_Sala_Cirurgia) AS localizacao,
             c.N_Tuss,
+
             CASE 
-                WHEN c.Bloco_Leito IS NOT NULL THEN 
-                    CONCAT('Bloco ', c.Bloco_Leito,' / Anexo ', c.Anexo_Leito, ' / Andar ', c.Andar_Leito, ' / Sala ', c.N_Sala_Leito, ' / Leito ', c.N_Leito)
+                WHEN i.Codigo IS NOT NULL THEN 
+                    CONCAT('Bloco ', i.Bloco_Leito,' / Anexo ', i.Anexo_Leito, ' / Andar ', i.Andar_Leito, ' / Sala ', i.N_Sala_Leito, ' / Leito ', i.N_Leito)
                 ELSE NULL 
             END AS localizacao_leito,
+            
             c.Valor,
             c.Esta_Paga
           FROM 
             hospital.cirurgia c
-          
+
           JOIN 
             hospital.enfermeiro_participa_cirurgia my_epc ON c.CPF_P = my_epc.CPF_P AND c.Numero = my_epc.Numero_Cirurgia AND my_epc.CPF_E = ?
             
           JOIN 
             hospital.usuario up ON c.CPF_P = up.cpf
+            
+          LEFT JOIN 
+            hospital.internacao i ON c.Codigo_Internacao = i.Codigo
             
           LEFT JOIN 
             hospital.realiza r ON c.CPF_P = r.CPF_P AND c.Numero = r.N_Cirurgia
@@ -899,7 +967,7 @@ app.get('/api/enfermeiro/minhas-cirurgias', authenticateToken, async (req, res) 
             hospital.usuario ue ON epc.CPF_E = ue.cpf
             
           GROUP BY
-            c.CPF_P, c.Numero
+            c.CPF_P, c.Numero, i.Codigo, i.Bloco_Leito, i.Anexo_Leito, i.Andar_Leito, i.N_Sala_Leito, i.N_Leito
           HAVING 
             (nome_paciente LIKE ? OR medicos LIKE ?)
           ORDER BY 
@@ -930,22 +998,56 @@ app.delete('/api/cirurgia/deletar', authenticateToken, async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
-    
-    const query = `DELETE FROM hospital.cirurgia WHERE CPF_P = ? AND Numero = ?`;
-    
-    const [result] = await connection.execute(query, [cpf_p, numero]);
+    await connection.beginTransaction();
 
-    if (result.affectedRows > 0) {
-      res.status(200).json({ message: 'Cirurgia excluída com sucesso!' });
-    } else {
-      res.status(404).json({ message: 'Cirurgia não encontrada.' });
+    const [cirurgiaRows] = await connection.execute(
+      'SELECT Codigo_Internacao FROM hospital.cirurgia WHERE CPF_P = ? AND Numero = ?', 
+      [cpf_p, numero]
+    );
+
+    if (cirurgiaRows.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ message: 'Cirurgia não encontrada.' });
     }
+
+    const codigoInternacao = cirurgiaRows[0].Codigo_Internacao;
+
+    await connection.execute(
+      'DELETE FROM hospital.cirurgia WHERE CPF_P = ? AND Numero = ?', 
+      [cpf_p, numero]
+    );
+
+    if (codigoInternacao) {
+        const [internacaoRows] = await connection.execute(
+            'SELECT * FROM hospital.internacao WHERE Codigo = ?', 
+            [codigoInternacao]
+        );
+
+        if (internacaoRows.length > 0) {
+            const i = internacaoRows[0];
+            
+            await connection.execute(
+                `UPDATE hospital.leito 
+                 SET Ocupado = 0 
+                 WHERE Bloco_Leito = ? AND Anexo_Leito = ? AND Andar_Leito = ? AND N_Sala = ? AND N_Leito = ?`,
+                [i.Bloco_Leito, i.Anexo_Leito, i.Andar_Leito, i.N_Sala_Leito, i.N_Leito]
+            );
+
+            await connection.execute('DELETE FROM hospital.internacao WHERE Codigo = ?', [codigoInternacao]);
+        }
+    }
+
+    await connection.commit();
+    res.status(200).json({ message: 'Cirurgia excluída com sucesso!' });
 
   } catch (error) {
+    if (connection) await connection.rollback();
     console.error('Erro ao excluir cirurgia:', error);
+    
     if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-        return res.status(409).json({ message: 'Não é possível excluir: existem registros dependentes.' });
+        return res.status(409).json({ message: 'Não é possível excluir: existem registros dependentes desta cirurgia.' });
     }
+    
     res.status(500).json({ message: 'Erro interno ao tentar excluir a cirurgia.' });
   } finally {
     if (connection) {
@@ -1043,25 +1145,41 @@ app.post('/api/medico/marcar-cirurgia', authenticateToken, async (req, res) => {
     );
     const numeroCirurgia = rowsNum[0].proximo;
 
-    const blocoLeito = leito ? leito.bloco : null;
-    const anexoLeito = leito ? leito.anexo : null;
-    const andarLeito = leito ? leito.andar : null;
-    const salaLeito = leito ? leito.sala : null;
-    const numLeito = leito ? leito.numero : null;
-    const dataEntradaLeito = leito ? data_entrada : null
+    let codigoInternacao = null;
+
+    if (leito) {
+      const queryInternacao = `
+        INSERT INTO hospital.internacao 
+        (Bloco_Leito, Anexo_Leito, Andar_Leito, N_Sala_Leito, N_Leito, Data_Entrada_Leito) 
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      
+      const [resInternacao] = await connection.execute(queryInternacao, [
+        leito.bloco, leito.anexo, leito.andar, leito.sala, leito.numero, data_entrada
+      ]);
+      
+      codigoInternacao = resInternacao.insertId; 
+
+      await connection.execute(
+        `UPDATE hospital.leito 
+         SET Ocupado = 1 
+         WHERE Bloco_Leito = ? AND Anexo_Leito = ? AND Andar_Leito = ? AND N_Sala = ? AND N_Leito = ?`,
+        [leito.bloco, leito.anexo, leito.andar, leito.sala, leito.numero]
+      );
+    }
 
     const queryCirurgia = `
       INSERT INTO hospital.cirurgia 
       (CPF_P, Numero, Data_Entrada, Valor, N_Tuss, 
        Bloco_Sala_Cirurgia, Anexo_Sala_Cirurgia, Andar_Sala_Cirurgia, N_Sala_Cirurgia,
-       Bloco_Leito, Anexo_Leito, Andar_Leito, N_Sala_Leito, N_Leito, Data_Entrada_Leito)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       Codigo_Internacao) -- Nova coluna FK
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     await connection.execute(queryCirurgia, [
       cpf_p, numeroCirurgia, data_entrada, valor || 0, n_tuss,
       sala_cirurgia.bloco, sala_cirurgia.anexo, sala_cirurgia.andar, sala_cirurgia.numero,
-      blocoLeito, anexoLeito, andarLeito, salaLeito, numLeito, dataEntradaLeito
+      codigoInternacao
     ]);
 
     await connection.execute(
@@ -1076,15 +1194,6 @@ app.post('/api/medico/marcar-cirurgia', authenticateToken, async (req, res) => {
           [cpf_enf, cpf_p, numeroCirurgia]
         );
       }
-    }
-
-    if (leito) {
-      await connection.execute(
-        `UPDATE hospital.leito 
-         SET Ocupado = 1 
-         WHERE Bloco_Leito = ? AND Anexo_Leito = ? AND Andar_Leito = ? AND N_Sala = ? AND N_Leito = ?`,
-        [blocoLeito, anexoLeito, andarLeito, salaLeito, numLeito]
-      );
     }
 
     await connection.commit();
@@ -1107,11 +1216,13 @@ app.get('/api/admin/medicos', async (req, res) => {
       SELECT 
         u.cpf, 
         CONCAT(u.primeiro_nome, ' ', u.sobrenome) AS nome_completo, 
-        m.Especialidade
+        me.Especialidade
       FROM 
         hospital.usuario u
       JOIN 
         hospital.medico m ON u.cpf = m.cpf
+      LEFT JOIN 
+        hospital.medico_especialidade me ON m.cpf = me.CPF_M
       ORDER BY
         u.primeiro_nome;
     `;
@@ -1131,9 +1242,18 @@ app.get('/api/admin/consultorios', async (req, res) => {
   try {
     connection = await pool.getConnection();
     const query = `
-      SELECT Bloco, Anexo, Andar, Numero, Especialidade 
-      FROM hospital.consultorio
-      ORDER BY Bloco, Andar, Numero;
+      SELECT 
+        c.Bloco, 
+        c.Anexo, 
+        c.Andar, 
+        c.Numero, 
+        ce.Especialidade 
+      FROM 
+        hospital.consultorio c
+      LEFT JOIN 
+        hospital.consultorio_especialidade ce ON c.Bloco = ce.Bloco AND c.Anexo = ce.Anexo AND c.Andar = ce.Andar AND c.Numero = ce.Numero
+      ORDER BY 
+        c.Bloco, c.Andar, c.Numero;
     `;
     const [rows] = await connection.execute(query);
     res.status(200).json(rows);
@@ -1569,12 +1689,28 @@ app.get('/api/admin/buscar-consultorios', authenticateToken, async (req, res) =>
   let connection;
   try {
     connection = await pool.getConnection();
+    
     const query = `
-      SELECT Bloco, Anexo, Andar, Numero, Especialidade
-      FROM hospital.consultorio
-      WHERE Numero LIKE ? OR Especialidade LIKE ? OR Bloco LIKE ?
-      ORDER BY Bloco, Andar, Numero;
+      SELECT 
+        c.Bloco, 
+        c.Anexo, 
+        c.Andar, 
+        c.Numero, 
+        GROUP_CONCAT(ce.Especialidade SEPARATOR ', ') AS Especialidade
+      FROM hospital.consultorio c
+      LEFT JOIN hospital.consultorio_especialidade ce ON 
+        c.Bloco = ce.Bloco AND 
+        c.Anexo = ce.Anexo AND 
+        c.Andar = ce.Andar AND 
+        c.Numero = ce.Numero
+      GROUP BY c.Bloco, c.Anexo, c.Andar, c.Numero
+      HAVING 
+        c.Numero LIKE ? OR 
+        c.Bloco LIKE ? OR 
+        IFNULL(Especialidade, '') LIKE ?
+      ORDER BY c.Bloco, c.Andar, c.Numero;
     `;
+    
     const [rows] = await connection.execute(query, [searchTerm, searchTerm, searchTerm]);
     res.status(200).json(rows);
   } catch (error) {
@@ -1595,14 +1731,33 @@ app.post('/api/admin/consultorios/cadastrar', authenticateToken, async (req, res
   let connection;
   try {
     connection = await pool.getConnection();
-    const query = `
-      INSERT INTO hospital.consultorio (Bloco, Anexo, Andar, Numero, Especialidade)
-      VALUES (?, ?, ?, ?, ?)
+    await connection.beginTransaction();
+
+    const queryConsultorio = `
+      INSERT INTO hospital.consultorio (Bloco, Anexo, Andar, Numero)
+      VALUES (?, ?, ?, ?)
     `;
-    await connection.execute(query, [bloco, anexo, andar, numero, especialidade || null]);
+    await connection.execute(queryConsultorio, [bloco, anexo, andar, numero]);
+
+    if (especialidade && especialidade.trim() !== '') {
+        await connection.execute(
+            `INSERT IGNORE INTO hospital.especialidade (Nome) VALUES (?)`, 
+            [especialidade]
+        );
+
+        const queryLink = `
+            INSERT INTO hospital.consultorio_especialidade (Bloco, Anexo, Andar, Numero, Especialidade)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        await connection.execute(queryLink, [bloco, anexo, andar, numero, especialidade]);
+    }
+
+    await connection.commit();
     res.status(201).json({ message: 'Consultório cadastrado com sucesso!' });
 
   } catch (error) {
+    if (connection) await connection.rollback();
+    
     console.error('Erro ao cadastrar consultório:', error);
     if (error.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({ message: 'Este consultório já existe nesta localização.' });
