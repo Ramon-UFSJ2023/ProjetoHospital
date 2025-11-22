@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./style/GerenciasCadastro.css"; 
-import DatePicker from "react-datepicker";
+import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { ptBR } from 'date-fns/locale';
 import BtnCustomized from "../Buttons/ButtonCustomized";
@@ -8,26 +8,29 @@ import Select from 'react-select';
 import CurrencyInput from "react-currency-input-field";
 import { useLocation } from "react-router-dom";
 
+registerLocale('ptBR', ptBR);
+
 export default function MarcarCirurgia() {
   const [pacientes, setPacientes] = useState([]);
   const [salas, setSalas] = useState([]);
   const [leitos, setLeitos] = useState([]);
   const [enfermeiros, setEnfermeiros] = useState([]);
   const [medicos, setMedicos] = useState([]); 
-
   const [pacienteSelecionado, setPacienteSelecionado] = useState(null);
   const [salaSelecionada, setSalaSelecionada] = useState(null);
   const [leitoSelecionado, setLeitoSelecionado] = useState(null);
   const [enfermeirosSelecionados, setEnfermeirosSelecionados] = useState([]);
-  const [medicoSelecionado, setMedicoSelecionado] = useState(null);
-
+  const [medicosSelecionados, setMedicosSelecionados] = useState([]);
   const [dataEntrada, setDataEntrada] = useState(new Date());
+  const [dataSaida, setDataSaida] = useState(() => {
+      const d = new Date();
+      d.setHours(d.getHours() + 2); 
+      return d;
+  });
   const [nTuss, setNTuss] = useState("");
   const [valor, setValor] = useState("");
-  
   const [user, setUser] = useState(null);
   const [token, setToken] = useState("");
-
   const location = useLocation();
   const isMedicoPage = location.pathname.includes('/page-medico');
 
@@ -45,7 +48,10 @@ export default function MarcarCirurgia() {
         if (isMedicoPage || !user.eh_admin) {
             const medicoLogado = medicos.find(m => m.value === user.cpf);
             if (medicoLogado) {
-                setMedicoSelecionado(medicoLogado);
+                setMedicosSelecionados(prev => {
+                    if (prev.length === 0) return [medicoLogado];
+                    return prev;
+                });
             }
         }
     }
@@ -112,23 +118,34 @@ export default function MarcarCirurgia() {
         alert("Paciente e Sala Cirúrgica são obrigatórios.");
         return;
     }
+
+    const agora = new Date();
+    if (dataEntrada < new Date(agora.getTime() - 60000)) {
+        alert("Não é possível marcar cirurgias em datas passadas.");
+        return;
+    }
+
+    if (dataSaida <= dataEntrada) {
+        alert("A data de finalização deve ser posterior à data de entrada.");
+        return;
+    }
     
-    const isAdminMode = user.eh_admin && !isMedicoPage;
-    
-    if (isAdminMode && !medicoSelecionado) {
-        alert("Administradores devem selecionar um médico responsável.");
+    if (!medicosSelecionados || medicosSelecionados.length === 0) {
+        alert("Selecione ao menos um médico responsável.");
         return;
     }
 
     const payload = {
         cpf_p: pacienteSelecionado.value,
         data_entrada: formatarDataLocalSQL(dataEntrada),
+        data_finalizacao: formatarDataLocalSQL(dataSaida),
         sala_cirurgia: salaSelecionada.value,
         leito: leitoSelecionado ? leitoSelecionado.value : null,
         enfermeiros: enfermeirosSelecionados.map(e => e.value),
+        medicos: medicosSelecionados.map(m => m.value),
+        
         n_tuss: nTuss,
         valor: valor ? parseFloat(valor.replace(',', '.')) : 0.0,
-        medico_responsavel: medicoSelecionado ? medicoSelecionado.value : null 
     };
 
     try {
@@ -142,22 +159,30 @@ export default function MarcarCirurgia() {
         });
 
         const data = await response.json();
+
         if (response.ok) {
-            alert("Cirurgia marcada com sucesso!");
+            alert(data.message);
+            
             setPacienteSelecionado(null);
             setSalaSelecionada(null);
             setLeitoSelecionado(null);
             setEnfermeirosSelecionados([]);
+            
+            if (user.eh_admin && !isMedicoPage) {
+                setMedicosSelecionados([]);
+            } else if (user.eh_medico) {
+                const medicoLogado = medicos.find(m => m.value === user.cpf);
+                setMedicosSelecionados(medicoLogado ? [medicoLogado] : []);
+            }
+            
             setNTuss("");
             setValor("");
-            
-        if (isAdminMode) setMedicoSelecionado(null);
         } else {
             alert(data.message || "Erro ao marcar cirurgia.");
         }
     } catch (error) {
         console.error("Erro:", error);
-        alert("Erro de conexão.");
+        alert("Erro de conexão ao tentar agendar.");
     }
   };
 
@@ -182,27 +207,43 @@ export default function MarcarCirurgia() {
 
                     {user && (user.eh_admin || user.eh_medico) && (
                          <div className="input-groups-CadFun">
-                            <label>Médico Responsável</label>
+                            <label>Médicos Responsáveis</label>
                             <Select 
                                 options={medicos} 
-                                value={medicoSelecionado} 
-                                onChange={setMedicoSelecionado}
-                                placeholder="Selecione o médico..."
-                                isDisabled={!user.eh_admin || isMedicoPage} 
+                                value={medicosSelecionados} 
+                                onChange={setMedicosSelecionados}
+                                placeholder="Selecione os médicos..."
+                                isMulti 
                             />
                         </div>
                     )}
 
-                    <div className="input-groups-CadFun">
-                        <label>Data e Hora</label>
-                        <DatePicker
-                            selected={dataEntrada}
-                            onChange={(date) => setDataEntrada(date)}
-                            showTimeSelect
-                            dateFormat="dd/MM/yyyy HH:mm"
-                            className="inputs-Cad-Fun"
-                            locale={ptBR}
-                        />
+                    <div style={{ display: 'flex', gap: '20px' }}>
+                        <div className="input-groups-CadFun" style={{ flex: 1 }}>
+                            <label>Data e Hora de Início</label>
+                            <DatePicker
+                                selected={dataEntrada}
+                                onChange={(date) => setDataEntrada(date)}
+                                showTimeSelect
+                                dateFormat="dd/MM/yyyy HH:mm"
+                                className="inputs-Cad-Fun"
+                                locale={ptBR}
+                                minDate={new Date()} 
+                            />
+                        </div>
+                        
+                        <div className="input-groups-CadFun" style={{ flex: 1 }}>
+                            <label>Previsão de Término</label>
+                            <DatePicker
+                                selected={dataSaida}
+                                onChange={(date) => setDataSaida(date)}
+                                showTimeSelect
+                                dateFormat="dd/MM/yyyy HH:mm"
+                                className="inputs-Cad-Fun"
+                                locale={ptBR}
+                                minDate={dataEntrada} 
+                            />
+                        </div>
                     </div>
                 </section>
 

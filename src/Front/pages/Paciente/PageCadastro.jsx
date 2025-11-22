@@ -99,7 +99,6 @@ export default function PageCadastro() {
         alert(data.message);
       }
     } catch (error) {
-      console.error("Erro de rede ou ao conectar com a API:", error);
       alert("Não foi possível conectar ao servidor. Tente novamente mais tarde.");
     }
   };

@@ -2,7 +2,7 @@ import "./btn.css";
 
 export default function ButtunReturn({ text, onClick }) {
   return (
-    <form class="form-btn-return">
+    <form className="form-btn-return">
       <button type="button" className="btn-return" onClick={onClick}>
         <label htmlFor="" className="text-btn-return">
           {text}

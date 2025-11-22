@@ -3,6 +3,7 @@ import ListaConsultas from "../ConteudosDashBoard/ListaConsultas.jsx";
 import ListaCirurgias from "../ConteudosDashBoard/ListaCirurgias.jsx";
 import MarcarConsulta from "../ConteudosDashBoard/MarcarConsulta.jsx"; 
 import MarcarCirurgia from "../ConteudosDashBoard/MarcarCirurgia.jsx"; 
+import ListaInternacoes from "../ConteudosDashBoard/ListaInternacoes.jsx";
 import PropTypes from "prop-types";
 
 export default function DashBoardPaciente({ stateNow, itens, onNavigateClick = () => {} }) {
@@ -22,6 +23,9 @@ export default function DashBoardPaciente({ stateNow, itens, onNavigateClick = (
 
         case "Marcar Cirurgia": 
             return <MarcarCirurgia />;
+
+        case "Internações":
+            return <ListaInternacoes />;
 
         default:
              if(stateNow === itens[1]?.label) return <ListaCirurgias />;

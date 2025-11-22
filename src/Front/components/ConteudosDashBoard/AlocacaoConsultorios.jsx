@@ -40,17 +40,29 @@ export default function GerenciarAlocacoes() {
   const [semanaSelecionada, setSemanaSelecionada] = useState(getInicioDaSemana(new Date()));
   const [consultorioSelecionado, setConsultorioSelecionado] = useState(null);
   const [medicoSelecionado, setMedicoSelecionado] = useState(null);
+  const [token, setToken] = useState(null);
 
   const horarios = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
   const diasDaSemana = [1, 2, 3, 4, 5]; 
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/admin/medicos")
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) setToken(storedToken);
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    fetch("http://localhost:3001/api/admin/medicos", {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then((res) => res.json())
       .then((data) => setMedicos(data))
       .catch((err) => console.error("Erro ao buscar médicos:", err));
 
-    fetch("http://localhost:3001/api/admin/consultorios")
+    fetch("http://localhost:3001/api/admin/consultorios", {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then((res) => res.json())
       .then((data) => {
         setConsultorios(data);
@@ -59,16 +71,16 @@ export default function GerenciarAlocacoes() {
         }
       })
       .catch((err) => console.error("Erro ao buscar consultórios:", err));
-  }, []);
+  }, [token]);
 
   useEffect(() => {
-    if (consultorioSelecionado) {
+    if (consultorioSelecionado && token) {
       fetchAlocacoes();
     }
-  }, [consultorioSelecionado, semanaSelecionada]);
+  }, [consultorioSelecionado, semanaSelecionada, token]);
 
   const fetchAlocacoes = () => {
-    if (!consultorioSelecionado) return; 
+    if (!consultorioSelecionado || !token) return; 
 
     const inicioSemana = getInicioDaSemana(semanaSelecionada);
     const fimSemana = new Date(inicioSemana);
@@ -81,7 +93,9 @@ export default function GerenciarAlocacoes() {
       data_fim_semana: formatarDataHoraLocalSQL(fimSemana),
     });
 
-    fetch(`http://localhost:3001/api/admin/alocacoes?${params.toString()}`)
+    fetch(`http://localhost:3001/api/admin/alocacoes?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then((res) => res.json())
       .then((data) => setAlocacoes(data))
       .catch((err) => console.error("Erro ao buscar alocações:", err));
@@ -107,10 +121,14 @@ export default function GerenciarAlocacoes() {
     const dataHoraFim = new Date(dataHoraInicio);
     dataHoraFim.setHours(dataHoraFim.getHours() + 1); 
 
+    const agora = new Date();
+    if (dataHoraInicio < agora) {
+        alert("Não é permitido realizar alterações em horários passados.");
+        return;
+    }
+
     const dataHoraInicioSQL = formatarDataHoraLocalSQL(dataHoraInicio);
     const dataHoraFimSQL = formatarDataHoraLocalSQL(dataHoraFim);
-
-    console.log("Tentando alocar em:", dataHoraInicioSQL); 
 
     const alocacaoExistente = getAlocacaoDoSlot(diaIndex, horario);
 
@@ -128,7 +146,10 @@ export default function GerenciarAlocacoes() {
         
         fetch("http://localhost:3001/api/admin/desalocar", {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+          },
           body: JSON.stringify(body),
         })
         .then(res => res.json())
@@ -141,7 +162,9 @@ export default function GerenciarAlocacoes() {
             alert("Erro ao conectar com servidor.");
         });
       }
-    } else {
+    } 
+
+    else {
       if (!medicoSelecionado) {
         alert("Por favor, selecione um médico na lista da esquerda primeiro.");
         return;
@@ -161,15 +184,20 @@ export default function GerenciarAlocacoes() {
 
         fetch("http://localhost:3001/api/admin/alocar", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+          },
           body: JSON.stringify(body),
         })
-        .then(res => res.json())
-        .then(data => {
-          alert(data.message);
-          if (data.message && data.message.includes("sucesso")) {
-            fetchAlocacoes(); 
-          }
+        .then(async res => {
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+                fetchAlocacoes();
+            } else {
+                alert("Erro: " + data.message);
+            }
         })
         .catch(err => {
              console.error("Erro ao alocar:", err);
@@ -262,19 +290,26 @@ export default function GerenciarAlocacoes() {
                   
                   {diasDaSemana.map((diaIndex) => {
                     const alocacao = getAlocacaoDoSlot(diaIndex, horario);
+                    const dataSlot = getDataDoSlot(diaIndex, horario);
+                    const isPassado = dataSlot < new Date();
+
                     return (
                       <td
                         key={diaIndex}
-                        className={alocacao ? "slot-ocupado" : "slot-livre"}
+                        className={`
+                            ${alocacao ? "slot-ocupado" : "slot-livre"} 
+                            ${isPassado ? "slot-passado" : ""}
+                        `}
+                        style={isPassado ? { opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#f0f0f0' } : {}}
                         onClick={() => handleSlotClick(diaIndex, horario)}
                       >
                         {alocacao ? (
                           <>
                             <strong>{alocacao.nome_medico}</strong>
                             <br/>
-                            <small>(Clique p/ desalocar)</small>
+                            {!isPassado && <small>(Clique p/ desalocar)</small>}
                           </>
-                        ) : "Livre"}
+                        ) : (isPassado ? "-" : "Livre")}
                       </td>
                     );
                   })}

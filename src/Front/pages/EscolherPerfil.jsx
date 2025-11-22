@@ -47,9 +47,18 @@ export default function EscolherPerfil() {
         icon: I_Enfermeiro 
       });
     }
+
+    if (user.eh_conselho) {
+      availableDashboards.push({ 
+        role: 'conselho', 
+        path: '/page-conselho', 
+        label: 'Conselho', 
+        icon: I_Admin 
+      });
+    }
     
-    if (availableDashboards.length <= 1) {
-      navigate(availableDashboards[0]?.path || '/'); 
+    if (availableDashboards.length === 1) {
+      navigate(availableDashboards[0].path); 
     } else {
       setDashboards(availableDashboards);
     }
@@ -71,17 +80,26 @@ export default function EscolherPerfil() {
             </p>
           </div>
           
-          {dashboards.map(dash => (
-            <BtnCustomized 
-              key={dash.role}
-              size="larger"
-              variant="icon"
-              TypeText="strong"
-              text={`Entrar como ${dash.label}`}
-              img={dash.icon} 
-              onClick={() => navigate(dash.path)}
-            />
-          ))}
+          <div style={{
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '15px', 
+              width: '100%', 
+              alignItems: 'center',
+              marginTop: '20px'
+          }}>
+            {dashboards.map(dash => (
+              <BtnCustomized 
+                key={dash.role}
+                size="larger"
+                variant="icon"
+                TypeText="strong"
+                text={`Entrar como ${dash.label}`}
+                img={dash.icon} 
+                onClick={() => navigate(dash.path)}
+              />
+            ))}
+          </div>
 
         </div>
         <footer className="bottom">

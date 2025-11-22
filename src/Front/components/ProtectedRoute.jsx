@@ -24,7 +24,7 @@ const getUserHomePage = (user) => {
   if (user.eh_medico) return '/page-medico';
   if (user.eh_enfermeiro) return '/page-enfermeiro';
   if (user.eh_paciente) return '/page-inicial-paciente';
-  
+  if (user.eh_conselho) return '/page-conselho';
   return '/'; 
 };
 
@@ -44,7 +44,7 @@ export default function ProtectedRoute({ children, requiredRoles = [] }) {
         if (role === 'enfermeiro') return user.eh_enfermeiro;
         if (role === 'admin') return user.eh_admin;
         if (role === 'funcionario') return user.eh_funcionario; 
-        
+        if (role === 'conselho') return user.eh_conselho;
         return false; 
       });
     }

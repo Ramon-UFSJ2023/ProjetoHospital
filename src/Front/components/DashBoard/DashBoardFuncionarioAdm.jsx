@@ -7,7 +7,8 @@ import ListaConsultas from "../ConteudosDashBoard/ListaConsultas.jsx";
 import ListaCirurgias from "../ConteudosDashBoard/ListaCirurgias.jsx";
 import GerenciadorAlocacoes from "../ConteudosDashBoard/GerenciadorAlocacoes.jsx";
 import MarcarCirurgia from "../ConteudosDashBoard/MarcarCirurgia.jsx"; 
-
+import MarcarConsulta from "../ConteudosDashBoard/MarcarConsulta.jsx"; 
+import ListaInternacoes from "../ConteudosDashBoard/ListaInternacoes.jsx"; 
 import PropTypes from "prop-types";
 
 export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
@@ -15,6 +16,12 @@ export default function DashBoardFuncionarioAdm({ stateNow, itens }) {
     switch (stateNow) {
       case "Consultas":
         return <ListaConsultas />;
+      
+      case "Marcar Consulta": 
+        return <MarcarConsulta />;
+
+      case "Internações": 
+        return <ListaInternacoes />;
 
       case "Alocações": 
         return <GerenciadorAlocacoes />;

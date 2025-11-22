@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./style/GerenciasCadastro.css";
 import DatePicker from "react-datepicker";
-import { useState } from "react";
 import "react-datepicker/dist/react-datepicker.css";
 import BtnCustomized from "../Buttons/ButtonCustomized";
 import CurrencyInput from "react-currency-input-field";
+import Select from 'react-select'; 
 
 export default function GerenciarCadastro() {
   const [nome, setNome] = useState("");
@@ -22,16 +22,14 @@ export default function GerenciarCadastro() {
   const [telefone, setTelefone] = useState("");
   const [password, setPassword] = useState("");
   const [typeCad, setTypeCad] = useState("medico");
-  
   const [admin, setAdmin] = useState(0); 
   const [conselho, setConselho] = useState(0); 
   const [cargaHoraria, setCargaHoraria] = useState(40);
-
-  const [especialidade, setEspecialidade] = useState("Clinico Geral");
+  const [especialidadesOptions, setEspecialidadesOptions] = useState([]);
+  const [especialidadesSelecionadas, setEspecialidadesSelecionadas] = useState([]);
   const [crm, setCrm] = useState("");
   const [cofen, setCofen] = useState("");
-  const [formacao, setFormacao] = useState("Graduação em Enfermagem");
-
+  const [formacao, setFormacao] = useState("Graduado em Enfermagem");
   const today = new Date();
 
   const min18Years = new Date(
@@ -47,6 +45,16 @@ export default function GerenciarCadastro() {
     return dataLocal.toISOString().split('T')[0];
   };
 
+  useEffect(() => {
+    fetch('http://localhost:3001/api/admin/especialidades')
+        .then(res => res.json())
+        .then(data => {
+            const options = data.map(esp => ({ value: esp.Nome, label: esp.Nome }));
+            setEspecialidadesOptions(options);
+        })
+        .catch(err => console.error("Erro ao carregar especialidades", err));
+  }, []);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("Enviando cadastro para o tipo:", typeCad);
@@ -61,6 +69,8 @@ export default function GerenciarCadastro() {
     const dataFormatada = formatarData(date);
     
     const salarioNumerico = typeCad !== 'paciente' ? (parseFloat(salario) || 0.0) : 0.0;
+
+    const listaEspecialidades = especialidadesSelecionadas.map(item => item.value);
 
     const dadosGerais = {
       typeCad: typeCad, 
@@ -86,7 +96,7 @@ export default function GerenciarCadastro() {
       carga_horaria: cargaHoraria,
 
       crm: crm,
-      especialidade: especialidade,
+      especialidades: listaEspecialidades, 
 
       cofen: cofen,
       formacao: formacao
@@ -105,6 +115,11 @@ export default function GerenciarCadastro() {
 
       if (response.ok) {
         alert(data.message); 
+        setNome("");
+        setCpf("");
+        setEmail("");
+        setEspecialidadesSelecionadas([]);
+        //Ia caçar limpar todos os campo mas acho que nem precisava
       } else {
         alert(data.message); 
       }
@@ -406,24 +421,62 @@ export default function GerenciarCadastro() {
                 <h1 className="title-group-func title-group-last-section">
                   Informações de Médico
                 </h1>
+                
                 <div className="input-groups-CadFun class-div-salario">
                   <label htmlFor="Especialidade" className="title-group-func-label">
-                    Especialidade
+                    Especialidades
                   </label>
-                  <select
-                    id="Especialidade"
-                    value={especialidade}
-                    onChange={(e) => setEspecialidade(e.target.value)}
-                    className="inputs-Cad-Fun gender-input"
-                    required
-                  >
-                    <option value="Cardiologia">Cardiologia</option>
-                    <option value="Dermatologia">Dermatologia</option>
-                    <option value="Ortopedia">Ortopedia</option>
-                    <option value="Psiquiatria">Psiquiatria</option>
-                    <option value="Clinico Geral">Clínico Geral</option>
-                  </select>
+                  <Select
+                    isMulti
+                    name="especialidades"
+                    options={especialidadesOptions}
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                    value={especialidadesSelecionadas}
+                    onChange={setEspecialidadesSelecionadas}
+                    placeholder="Selecione..."
+                    styles={{
+                        control: (base) => ({
+                            ...base,
+                            borderRadius: '20px',
+                            border: 'none',
+                            boxShadow: 'none',
+                            backgroundColor: '#fca2a2',
+                            minHeight: '40px'
+                        }),
+                        multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: '#9f2a2a',
+                            borderRadius: '10px'
+                        }),
+                        multiValueLabel: (base) => ({
+                            ...base,
+                            color: 'white',
+                        }),
+                        multiValueRemove: (base) => ({
+                            ...base,
+                            color: 'white',
+                            ':hover': {
+                                backgroundColor: '#780606',
+                                color: 'white',
+                            },
+                        }),
+                        placeholder: (base) => ({
+                            ...base,
+                            color: '#ffebeb'
+                        }),
+                        input: (base) => ({
+                            ...base,
+                            color: 'white'
+                        }),
+                        menu: (base) => ({
+                            ...base,
+                            zIndex: 9999
+                        })
+                    }}
+                  />
                 </div>
+
                 <div className="input-groups-CadFun class-div-salario">
                   <label htmlFor="CRM" className="title-group-func-label">
                     CRM (ex: 123456-SP)
@@ -449,14 +502,16 @@ export default function GerenciarCadastro() {
                   <label htmlFor="Formacao" className="title-group-func-label">
                     Formação
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="Formacao"
-                    className="inputs-Cad-Fun"
+                    className="inputs-Cad-Fun gender-input"
                     value={formacao}
                     onChange={(e) => setFormacao(e.target.value)}
                     required
-                  />
+                  >
+                    <option value="Graduado em Enfermagem">Graduado em Enfermagem</option>
+                    <option value="Técnico de Enfermagem">Técnico de Enfermagem</option>
+                  </select>
                 </div>
                 <div className="input-groups-CadFun class-div-salario">
                   <label htmlFor="COFEN" className="title-group-func-label">

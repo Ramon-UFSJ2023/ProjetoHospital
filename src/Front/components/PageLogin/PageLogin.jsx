@@ -36,6 +36,10 @@ export default function PageLogin({ title, showLinkCadastro }) {
     if (user.eh_enfermeiro) {
       dashboards.push({ role: 'enfermeiro', path: '/page-enfermeiro' });
     }
+
+    if (user.eh_conselho) {
+      dashboards.push({ role: 'conselho', path: '/page-conselho' });
+    }
     
     if (dashboards.length > 1) {
       navigate('/escolher-perfil');
@@ -47,7 +51,6 @@ export default function PageLogin({ title, showLinkCadastro }) {
       navigate('/login-funcionario'); 
     }
   };
-
 
   const TrySubmit = async (event) => {
     event.preventDefault();
@@ -82,9 +85,7 @@ export default function PageLogin({ title, showLinkCadastro }) {
           goPageInicialPacient();
         
         } else if (userType === 'funcionario' && data.user.eh_funcionario) {
-          
           handleRoleRedirect(data.user);
-        
         } else {
           alert("Acesso negado. Você não tem permissão para esta área.");
           logout();
@@ -107,57 +108,60 @@ export default function PageLogin({ title, showLinkCadastro }) {
             {title}
           </h2>
         </div>
-        <form className="Section-Bottom-Right-Side" onSubmit={TrySubmit}>
+        
+        <div className="Section-Bottom-Right-Side">
           <ButtonReturn text="<" onClick={goEscolhaAcesso} />
-          <label htmlFor="cpfInput" className="Info-Login">
-            CPF
-          </label>
-          <input
-            type="text"
-            name=""
-            id="cpfInput"
-            className="input-right-side"
-            value={cpf}
-            onChange={(e) => setCpf(e.target.value)}
-            placeholder="Digite seu CPF (apenas números)"
-            required
-          />
-          <label htmlFor="passwordInput" className="Info-Login">
-            Senha
-          </label>
-          <input
-            type="password"
-            name=""
-            id="passwordInput"
-            className="input-right-side"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Digite sua senha"
-            required
-          />
-          
-          <ButtonCustom
-            size="larger"
-            TypeText="strong"
-            text={isLoading ? "Carregando..." : "Continuar >"}
-            showImg="hidden"
-            type="submit" 
-            disabled={isLoading} 
-          />
+          <form onSubmit={TrySubmit} style={{ display: 'contents' }}>
+            <label htmlFor="cpfInput" className="Info-Login">
+                CPF
+            </label>
+            <input
+                type="text"
+                id="cpfInput"
+                className="input-right-side"
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
+                placeholder="Digite seu CPF (apenas números)"
+                required
+            />
+            
+            <label htmlFor="passwordInput" className="Info-Login">
+                Senha
+            </label>
+            <input
+                type="password"
+                id="passwordInput"
+                className="input-right-side"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Digite sua senha"
+                required
+            />
+            
+            <ButtonCustom
+                size="larger"
+                TypeText="strong"
+                text={isLoading ? "Carregando..." : "Continuar >"}
+                showImg="hidden"
+                TypeBtn="submit" 
+                disabled={isLoading} 
+            />
+          </form>
 
           {showLinkCadastro && (
             <h1 className="link-cad">
-              Não esta cadastrado?{" "}
+              Não está cadastrado?{" "}
               <a
                 className="link-cad"
                 id="direction-login"
                 onClick={goPageCadastroPaciente}
+                style={{ cursor: 'pointer' }}
               >
                 Cadastre-se
               </a>
             </h1>
           )}
-        </form>
+        </div>
       </div>
       <footer className="bottom">
         <p>@Copyright2026</p>

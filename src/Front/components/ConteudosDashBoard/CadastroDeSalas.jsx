@@ -12,27 +12,42 @@ import ListaConsultorios from "./ListaConsultorios";
 import ListaSalaCirurgia from "./ListaSalaCirurgia";
 import ListaSalaLeitos from "./ListaSalaLeitos"; 
 import ListaLeitos from "./ListaLeitos"; 
+import Select from 'react-select'; 
+
+const FormWrapper = ({ titulo, subStateSetter, children, onSubmit }) => (
+  <main className="container-cad-leitos" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{width: '100%', padding: '10px 20px', alignSelf: 'flex-start'}}>
+          <BtnCustomized size="small" TypeText="strong" text="< Voltar" showImg="hidden" TypeBtn="button" onClick={() => subStateSetter("menu")} />
+      </div>
+      <h1 className="title-group-sala">{titulo}</h1>
+      <form className="form-cad-leito" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }} onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
+          <div className="actions-cad-leito" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+              {children}
+          </div>
+          <div className="form-actions-cad-leito" style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+              <BtnCustomized showImg="hidden" size="medium" text="Cadastrar" TypeText="strong" TypeBtn="submit" />
+          </div>
+      </form>
+  </main>
+);
 
 export default function CadastroDeSalas() {
   const [telaAtual, setTelaAtual] = useState("menu");
-  
-
   const [subTelaLocalizacao, setSubTelaLocalizacao] = useState("menu");
   const [subTelaConsultorios, setSubTelaConsultorios] = useState("menu");
   const [subTelaSalaCirurgia, setSubTelaSalaCirurgia] = useState("menu");
   const [subTelaSalaLeitos, setSubTelaSalaLeitos] = useState("menu");
   const [subTelaLeitos, setSubTelaLeitos] = useState("menu"); 
-
   const [bloco, setBloco] = useState("");
   const [anexo, setAnexo] = useState("");
   const [andar, setAndar] = useState("");
   const [numero, setNumero] = useState("");
-  
   const [tipoSalaLeito, setTipoSalaLeito] = useState("");
   const [capacidadeSalaCirurgica, setCapacidadeSalaCirurgica] = useState("");
   const [numeroLeito, setNumeroLeito] = useState("");
   const [especialidadeConsultorio, setEspecialidadeConsultorio] = useState("");
-
+  const [especialidadesOptions, setEspecialidadesOptions] = useState([]);
+  const [especialidadesSelecionadas, setEspecialidadesSelecionadas] = useState([]);
   const [listaLocalizacoes, setListaLocalizacoes] = useState([]);
   const [listaSalasLeito, setListaSalasLeito] = useState([]); 
   
@@ -55,6 +70,18 @@ export default function CadastroDeSalas() {
         .then(res => res.json())
         .then(data => setListaLocalizacoes(data))
         .catch(err => console.error("Erro ao buscar localizações", err));
+    }
+
+    if (telaAtual === "Consultorios" && subTelaConsultorios === "cadastrar") {
+        fetch("http://localhost:3001/api/admin/especialidades", {
+             headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+            const options = data.map(esp => ({ value: esp.Nome, label: esp.Nome }));
+            setEspecialidadesOptions(options);
+        })
+        .catch(err => console.error("Erro ao buscar especialidades", err));
     }
 
     if (telaAtual === "leitos" && subTelaLeitos === "cadastrar") {
@@ -124,15 +151,29 @@ export default function CadastroDeSalas() {
 
   const handleCadastrarConsultorio = async () => {
     if (!bloco || !numero) { alert("Selecione local e número!"); return; }
+    
+    const listaEspecialidades = especialidadesSelecionadas.map(item => item.value);
+
     const token = localStorage.getItem('token');
     try {
         const response = await fetch('http://localhost:3001/api/admin/consultorios/cadastrar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ bloco, anexo, andar, numero, especialidade: especialidadeConsultorio })
+            body: JSON.stringify({ 
+                bloco, 
+                anexo, 
+                andar, 
+                numero, 
+                especialidades: listaEspecialidades
+            })
         });
         const data = await response.json();
-        if (response.ok) { alert("Consultório cadastrado!"); setNumero(""); setEspecialidadeConsultorio(""); setSubTelaConsultorios("listar"); } 
+        if (response.ok) { 
+            alert("Consultório cadastrado!"); 
+            setNumero(""); 
+            setEspecialidadesSelecionadas([]); 
+            setSubTelaConsultorios("listar"); 
+        } 
         else { alert(data.message); }
     } catch (error) { console.error(error); alert("Erro ao conectar."); }
   };
@@ -177,7 +218,7 @@ export default function CadastroDeSalas() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ 
                 bloco, anexo, andar, 
-                n_sala: numero,
+                n_sala: numero, 
                 n_leito: numeroLeito 
             })
         });
@@ -197,25 +238,21 @@ export default function CadastroDeSalas() {
           <img src={ImgSalaLeitos} alt="Sala Leitos" className="config-img-cad-sala" />
           <BtnCustomized size="small" TypeText="strong" text="Sala de Leitos" showImg="hidden" TypeBtn="button" onClick={() => { setTelaAtual("sala-leitos"); setSubTelaSalaLeitos("menu"); }} />
         </div>
-
         <div className="optionsCad">
           <img src={ImgLeitos} alt="Leitos" className="config-img-cad-sala" />
           <BtnCustomized size="small" TypeText="strong" text="Leitos" showImg="hidden" TypeBtn="button" onClick={() => { setTelaAtual("leitos"); setSubTelaLeitos("menu"); }} />
         </div>
-
         <div className="optionsCad">
           <img src={ImgLocal} alt="Localizações" className="config-img-cad-sala" />
           <BtnCustomized size="small" TypeText="strong" text="Localizações" showImg="hidden" TypeBtn="button" onClick={() => { setTelaAtual("localizacoes"); setSubTelaLocalizacao("menu"); }} />
         </div>
       </main>
-
       <main className="LinesOptions LineDown">
         <div></div>
         <div className="optionsCad">
           <img src={ImgSalaCirurgia} alt="Sala Cirurgia" className="config-img-cad-sala" />
           <BtnCustomized size="small" TypeText="strong" text="Sala Cirurgica" showImg="hidden" TypeBtn="button" onClick={() => { setTelaAtual("sala-cirurgica"); setSubTelaSalaCirurgia("menu"); }} />
         </div>
-
         <div className="optionsCad">
           <img src={ImgConsultorios} alt="Consultorios" className="config-img-cad-sala" />
           <BtnCustomized size="small" TypeText="strong" text="Consultorios" showImg="hidden" TypeBtn="button" onClick={() => { setTelaAtual("Consultorios"); setSubTelaConsultorios("menu"); }} />
@@ -253,7 +290,7 @@ export default function CadastroDeSalas() {
             </div>
         );
     } else if (subState === "cadastrar") {
-        return <ComponenteCadastro />;
+        return ComponenteCadastro();
     }
   };
 
@@ -262,23 +299,6 @@ export default function CadastroDeSalas() {
   const renderGerenciadorSalaCirurgia = () => renderGerenciadorBase("Salas Cirúrgicas", ImgSalaCirurgia, subTelaSalaCirurgia, setSubTelaSalaCirurgia, ListaSalaCirurgia, renderFormCadSalaCirurgia);
   const renderGerenciadorSalaLeitos = () => renderGerenciadorBase("Salas de Leitos", ImgSalaLeitos, subTelaSalaLeitos, setSubTelaSalaLeitos, ListaSalaLeitos, renderFormCadSalaLeitos);
   const renderGerenciadorLeitos = () => renderGerenciadorBase("Leitos", ImgLeitos, subTelaLeitos, setSubTelaLeitos, ListaLeitos, renderFormCadLeito);
-
-  const FormWrapper = ({ titulo, subStateSetter, children, onSubmit }) => (
-    <main className="container-cad-leitos" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{width: '100%', padding: '10px 20px', alignSelf: 'flex-start'}}>
-            <BtnCustomized size="small" TypeText="strong" text="< Voltar" showImg="hidden" TypeBtn="button" onClick={() => subStateSetter("menu")} />
-        </div>
-        <h1 className="title-group-sala">{titulo}</h1>
-        <form className="form-cad-leito" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }} onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
-            <div className="actions-cad-leito" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                {children}
-            </div>
-            <div className="form-actions-cad-leito" style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-                <BtnCustomized showImg="hidden" size="medium" text="Cadastrar" TypeText="strong" TypeBtn="submit" />
-            </div>
-        </form>
-    </main>
-  );
 
   const renderFormCadLocalizacao = () => (
     <FormWrapper titulo="Nova Localização" subStateSetter={setSubTelaLocalizacao} onSubmit={handleCadastrarLocalizacao}>
@@ -298,7 +318,61 @@ export default function CadastroDeSalas() {
             </select>
         </div>
         <div className="cadastro-leitos"><label>Número da Sala</label><input type="text" className="inputs-Cad-Leitos" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ex: 101" required /></div>
-        <div className="cadastro-leitos"><label>Especialidade</label><input type="text" className="inputs-Cad-Leitos" value={especialidadeConsultorio} onChange={(e) => setEspecialidadeConsultorio(e.target.value)} placeholder="Ex: Cardiologia" /></div>
+        <div className="cadastro-leitos">
+            <label>Especialidades</label>
+            <Select
+                isMulti
+                name="especialidades"
+                options={especialidadesOptions}
+                className="basic-multi-select"
+                classNamePrefix="select"
+                value={especialidadesSelecionadas}
+                onChange={setEspecialidadesSelecionadas}
+                placeholder="Selecione especialidades..."
+                styles={{
+                    control: (base) => ({
+                        ...base,
+                        borderRadius: '20px',
+                        border: 'none',
+                        boxShadow: 'none',
+                        backgroundColor: '#fca2a2',
+                        minHeight: '40px',
+                        width: '500px',
+                        margin: '5px'
+                    }),
+                    multiValue: (base) => ({
+                        ...base,
+                        backgroundColor: '#9f2a2a',
+                        borderRadius: '10px'
+                    }),
+                    multiValueLabel: (base) => ({
+                        ...base,
+                        color: 'white',
+                    }),
+                    multiValueRemove: (base) => ({
+                        ...base,
+                        color: 'white',
+                        ':hover': {
+                            backgroundColor: '#780606',
+                            color: 'white',
+                        },
+                    }),
+                    placeholder: (base) => ({
+                        ...base,
+                        color: '#ffebeb'
+                    }),
+                    input: (base) => ({
+                        ...base,
+                        color: 'white'
+                    }),
+                    menu: (base) => ({
+                        ...base,
+                        zIndex: 9999,
+                        width: '500px'
+                    })
+                }}
+            />
+        </div>
     </FormWrapper>
   );
 
@@ -326,7 +400,21 @@ export default function CadastroDeSalas() {
             </select>
         </div>
         <div className="cadastro-leitos"><label>Número da Sala</label><input type="text" className="inputs-Cad-Leitos" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ex: 101" required /></div>
-        <div className="cadastro-leitos"><label>Tipo de Leito</label><input type="text" className="inputs-Cad-Leitos" value={tipoSalaLeito} onChange={(e) => setTipoSalaLeito(e.target.value)} placeholder="Ex: UTI, Enfermaria" required /></div>
+        
+        <div className="cadastro-leitos">
+            <label>Tipo de Leito</label>
+            <select 
+                className="inputs-Cad-Leitos" 
+                value={tipoSalaLeito} 
+                onChange={(e) => setTipoSalaLeito(e.target.value)} 
+                required
+                style={{cursor: 'pointer'}}
+            >
+                <option value="">Selecione...</option>
+                <option value="UTI">UTI</option>
+                <option value="Enfermaria">Enfermaria</option>
+            </select>
+        </div>
     </FormWrapper>
   );
 

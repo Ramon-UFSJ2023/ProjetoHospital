@@ -23,6 +23,8 @@ export default function AlocarEnfermeiro() {
   const [enfermeiroSelecionado, setEnfermeiroSelecionado] = useState(null);
   const [leitoSelecionado, setLeitoSelecionado] = useState(null);
   
+  const [minDataEntrada, setMinDataEntrada] = useState(null);
+
   const [dataEntrada, setDataEntrada] = useState(new Date());
   const [dataSaida, setDataSaida] = useState(() => {
      const d = new Date();
@@ -47,7 +49,7 @@ export default function AlocarEnfermeiro() {
         setEnfermeiros(options);
     });
 
-    fetch("http://localhost:3001/api/admin/buscar-leitos?busca=", {
+    fetch("http://localhost:3001/api/admin/leitos-ocupados", {
         headers: { 'Authorization': `Bearer ${token}` }
     }).then(res => res.json()).then(data => {
         const options = data.map(l => ({ 
@@ -56,20 +58,44 @@ export default function AlocarEnfermeiro() {
                 anexo: l.Anexo_Leito, 
                 andar: l.Andar_Leito, 
                 n_sala: l.N_Sala, 
-                n_leito: l.N_Leito 
+                n_leito: l.N_Leito,
+                data_entrada_paciente: l.Data_Entrada_Leito 
             }, 
-            label: `Leito ${l.N_Leito} - Sala ${l.N_Sala} (${l.Tipo_Leito})` 
+            label: `Leito ${l.N_Leito} (${l.Tipo_Leito}) - Pac: ${l.nome_paciente || 'N/D'}` 
         }));
         setLeitos(options);
     });
 
   }, [token]);
 
+  const handleLeitoChange = (selectedOption) => {
+      setLeitoSelecionado(selectedOption);
+      
+      if (selectedOption) {
+          const dataPaciente = new Date(selectedOption.value.data_entrada_paciente);
+          setMinDataEntrada(dataPaciente);
+
+          if (dataEntrada < dataPaciente) {
+              setDataEntrada(dataPaciente);
+              const novaSaida = new Date(dataPaciente);
+              novaSaida.setHours(novaSaida.getHours() + 12);
+              setDataSaida(novaSaida);
+          }
+      } else {
+          setMinDataEntrada(null);
+      }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!enfermeiroSelecionado || !leitoSelecionado) {
         alert("Selecione o enfermeiro e o leito.");
+        return;
+    }
+
+    if (minDataEntrada && dataEntrada < minDataEntrada) {
+        alert(`A data de início não pode ser anterior à entrada do paciente (${minDataEntrada.toLocaleString()}).`);
         return;
     }
 
@@ -95,6 +121,7 @@ export default function AlocarEnfermeiro() {
             alert("Alocação realizada com sucesso!");
             setEnfermeiroSelecionado(null);
             setLeitoSelecionado(null);
+            setMinDataEntrada(null);
         } else {
             alert(`Erro: ${data.message}`);
         }
@@ -122,12 +149,13 @@ export default function AlocarEnfermeiro() {
                 </div>
 
                 <div className="input-groups-CadFun">
-                    <label>Leito Responsável</label>
+                    <label>Leito Ocupado</label>
                     <Select 
                         options={leitos} 
                         value={leitoSelecionado} 
-                        onChange={setLeitoSelecionado}
-                        placeholder="Selecione o leito..."
+                        onChange={handleLeitoChange} 
+                        placeholder="Selecione um leito com paciente..."
+                        noOptionsMessage={() => "Nenhum leito ocupado disponível"}
                     />
                 </div>
 
@@ -141,7 +169,19 @@ export default function AlocarEnfermeiro() {
                             dateFormat="dd/MM/yyyy HH:mm"
                             className="inputs-Cad-Fun"
                             locale={ptBR}
+                            minDate={minDataEntrada || new Date()} 
+                            minTime={
+                                (minDataEntrada && dataEntrada.toDateString() === minDataEntrada.toDateString()) 
+                                ? minDataEntrada 
+                                : new Date().setHours(0,0,0,0)
+                            }
+                            maxTime={new Date().setHours(23,59,59,999)}
                         />
+                        {minDataEntrada && (
+                            <small style={{color: '#9f2a2a', marginTop: '5px'}}>
+                                Mínimo: {minDataEntrada.toLocaleString('pt-BR')}
+                            </small>
+                        )}
                     </div>
                     <div className="input-groups-CadFun" style={{flex: 1}}>
                         <label>Fim do Plantão (Máx 12h)</label>
@@ -158,7 +198,7 @@ export default function AlocarEnfermeiro() {
                 </div>
                 
                 <p style={{textAlign:'center', color: '#666', fontStyle:'italic', fontSize:'14px'}}>
-                    Nota: O sistema validará automaticamente se o enfermeiro cumpriu o descanso de 36h desde seu último plantão ou cirurgia.
+                    Nota: O sistema validará a jornada de 12h e o descanso de 36h.
                 </p>
 
             </div>
